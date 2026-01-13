@@ -26,6 +26,7 @@ jobs:
 
       - name: Bump version
         id: version
+        shell: bash
         run: |
           VERSION="${{ steps.current-version.outputs.version }}"
           IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
@@ -74,13 +75,16 @@ jobs:
         run: dotnet publish src/PowerDown.Cli/PowerDown.Cli.csproj -c Release -r ${{ matrix.RID }} --self-contained false -p:PublishSingleFile=false -o ./publish/${{ matrix.RID }}
 
       - name: Create artifact
+        shell: pwsh
         run: |
-          cd publish/${{ matrix.RID }}
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            7z a PowerDown-${{ needs.bump-version.outputs.version }}-${{ matrix.RID }}.zip ./*
-          else
-            tar czf PowerDown-${{ needs.bump-version.outputs.version }}-${{ matrix.RID }}.tar.gz ./*
-          fi
+          $dir = "publish/${{ matrix.RID }}"
+          Push-Location $dir
+          if ('${{ matrix.os }}' -eq 'windows-latest') {
+            Compress-Archive -Path ./* -DestinationPath "PowerDown-${{ needs.bump-version.outputs.version }}-${{ matrix.RID }}.zip"
+          } else {
+            tar czf "PowerDown-${{ needs.bump-version.outputs.version }}-${{ matrix.RID }}.tar.gz" ./*
+          }
+          Pop-Location
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
