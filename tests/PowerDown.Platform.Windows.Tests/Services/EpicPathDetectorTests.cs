@@ -23,13 +23,20 @@ public class EpicPathDetectorTests
     {
         if (!OperatingSystem.IsWindows())
         {
-            return; // Skip on non-Windows - paths are platform-specific
+            return;
         }
-        
-        var customPath = @"C:\CustomEpic";
-        var result = _detector.DetectEpicPath(customPath);
-        
-        result.Should().Be(customPath);
+
+        var customPath = Path.Combine(Path.GetTempPath(), "CustomEpic_" + Guid.NewGuid());
+        Directory.CreateDirectory(customPath);
+        try
+        {
+            var result = _detector.DetectEpicPath(customPath);
+            result.Should().Be(customPath);
+        }
+        finally
+        {
+            Directory.Delete(customPath);
+        }
     }
 
     [Theory]

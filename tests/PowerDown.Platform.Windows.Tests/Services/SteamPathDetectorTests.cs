@@ -23,13 +23,20 @@ public class SteamPathDetectorTests
     {
         if (!OperatingSystem.IsWindows())
         {
-            return; // Skip on non-Windows - paths are platform-specific
+            return;
         }
-        
-        var customPath = @"C:\CustomSteam";
-        var result = _detector.DetectSteamPath(customPath);
-        
-        result.Should().Be(customPath);
+
+        var customPath = Path.Combine(Path.GetTempPath(), "CustomSteam_" + Guid.NewGuid());
+        Directory.CreateDirectory(customPath);
+        try
+        {
+            var result = _detector.DetectSteamPath(customPath);
+            result.Should().Be(customPath);
+        }
+        finally
+        {
+            Directory.Delete(customPath);
+        }
     }
 
     [Theory]
