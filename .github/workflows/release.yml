@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read current version
+        id: current-version
+        run: echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        id: version
+        run: |
+          VERSION="${{ steps.current-version.outputs.version }}"
+          IFS='.' read -ra VERSION_PARTS <<< "$VERSION"
+          PATCH=$((VERSION_PARTS[2] + 1))
+          NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Current: $VERSION -> New: $NEW_VERSION"
+
+      - name: Update version file
+        run: echo "${{ steps.version.outputs.version }}" > version.txt
+
+      - name: Commit and tag
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Bump version to ${{ steps.version.outputs.version }}"
+          file_pattern: version.txt
+          tagging_message: v${{ steps.version.outputs.version }}
+
+  build:
+    needs: bump-version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            RID: linux-x64
+            EXT: tar.gz
+          - os: windows-latest
+            RID: win-x64
+            EXT: zip
+          - os: macos-latest
+            RID: osx-x64
+            EXT: tar.gz
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Build release
+        run: dotnet publish src/PowerDown.Cli/PowerDown.Cli.csproj -c Release -r ${{ matrix.RID }} --self-contained false -p:PublishSingleFile=false -o ./publish/${{ matrix.RID }}
+
+      - name: Create artifact
+        run: |
+          cd publish/${{ matrix.RID }}
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            7z a PowerDown-${{ needs.bump-version.outputs.version }}-${{ matrix.RID }}.zip ./*
+          else
+            tar czf PowerDown-${{ needs.bump-version.outputs.version }}-${{ matrix.RID }}.tar.gz ./*
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PowerDown-${{ matrix.os }}
+          path: publish/${{ matrix.RID }}/PowerDown-${{ needs.bump-version.outputs.version }}-${{ matrix.RID }}.${{ matrix.EXT }}
+
+  create-release:
+    needs: [bump-version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.bump-version.outputs.version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/PowerDown-ubuntu-latest/*
+            artifacts/PowerDown-windows-latest/*
+            artifacts/PowerDown-macos-latest/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

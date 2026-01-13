@@ -1,0 +1,51 @@
+root = true
+
+[*.{cs,vb}]
+# Core editorconfig settings
+indent_style = space
+indent_size = 4
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# .NET code style settings
+dotnet_sort_system_directives_first = true
+dotnet_style_coalesce_expression = true
+dotnet_style_collection_initializer = true
+dotnet_style_explicit_tuple_names = true
+dotnet_style_namespace_match_folder = true
+
+# C# specific settings
+csharp_style_conditional_delegate_call = true
+csharp_style_prefer_index_operator = true
+csharp_style_prefer_range_operator = true
+csharp_style_throw_expression = true
+
+# Naming conventions
+dotnet_naming_rule.interface_should_be_starts_with_I.severity = error
+dotnet_naming_rule.types_should_be_pascal_case.severity = error
+dotnet_naming_rule.private_or_internal_fields_should_be__camelCase.severity = warning
+dotnet_naming_rule.private_or_internal_static_fields_should_be_s_severity = warning
+
+# Unnecessary using directives
+dotnet_style_qualification_for_field = false
+dotnet_style_qualification_for_property = false
+dotnet_style_qualification_for_method = false
+dotnet_style_qualification_for_type = false
+
+# Expression-bodied members
+csharp_style_expression_bodied_methods = false
+csharp_style_expression_bodied_constructors = false
+csharp_style_expression_bodied_property_getters = false
+csharp_style_expression_bodied_property_setters = false
+
+# Pattern matching
+csharp_style_pattern_matching_over_is_with_check = true
+csharp_style_pattern_matching_over_as_with_null_check = true
+
+# Code quality
+dotnet_code_quality.ca1802 = error
+dotnet_code_quality.ca1822 = warning
+
+# Async method naming
+dotnet_naming_rule.async_methods_should_end_with_async.severity = error
