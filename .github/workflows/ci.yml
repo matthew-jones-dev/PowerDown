@@ -47,21 +47,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
       - name: Download coverage reports
         uses: actions/download-artifact@v4
         with:
           name: coverage-report-ubuntu-latest
           path: coverage
 
-      - name: Generate coverage badge
-        uses: tim-actions/coverage-badge-generator@v1
+      - name: ReportGenerator
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.1
         with:
-          verbose: true
-          path_to_coverage: coverage/coverage.cobertura.xml
-          output_to_file: coverage_badge.svg
+          reports: 'coverage/coverage.cobertura.xml'
+          targetdir: 'coveragereport'
+          reporttypes: 'Badges'
 
       - name: Upload coverage badge
         uses: actions/upload-artifact@v4
         with:
           name: coverage-badge
-          path: coverage_badge.svg
+          path: coveragereport/

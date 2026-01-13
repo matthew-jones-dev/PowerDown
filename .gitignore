@@ -52,3 +52,10 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# NTFS alternate data streams (Windows download metadata)
+*:Zone.Identifier
+*.jpg:Zone.Identifier
+*.png:Zone.Identifier
+*.gif:Zone.Identifier
+*.pdf:Zone.Identifier
