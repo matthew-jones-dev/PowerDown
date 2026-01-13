@@ -82,4 +82,40 @@ public class ConfigurationTests
         var config = new Configuration { Verbose = true };
         config.Verbose.Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public void Configuration_VerificationDelaySeconds_ThrowsOnInvalid(int invalidDelay)
+    {
+        var config = new Configuration();
+        Action act = () => config.VerificationDelaySeconds = invalidDelay;
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Verification delay must be greater than 0*");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public void Configuration_PollingIntervalSeconds_ThrowsOnInvalid(int invalidInterval)
+    {
+        var config = new Configuration();
+        Action act = () => config.PollingIntervalSeconds = invalidInterval;
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Polling interval must be greater than 0*");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public void Configuration_RequiredNoActivityChecks_ThrowsOnInvalid(int invalidChecks)
+    {
+        var config = new Configuration();
+        Action act = () => config.RequiredNoActivityChecks = invalidChecks;
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Required checks must be greater than 0*");
+    }
 }

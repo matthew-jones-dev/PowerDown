@@ -6,6 +6,11 @@ public class ConsoleLogger
 {
     private readonly bool _verbose;
 
+    public ConsoleLogger()
+    {
+        _verbose = false;
+    }
+
     public ConsoleLogger(bool verbose = false)
     {
         _verbose = verbose;

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>PowerDown.Platform.macOS</RootNamespace>
+    <AssemblyName>PowerDown.Platform.macOS</AssemblyName>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PowerDown.Abstractions\PowerDown.Abstractions.csproj" />
+    <ProjectReference Include="..\PowerDown.Core\PowerDown.Core.csproj" />
+  </ItemGroup>
+
+</Project>

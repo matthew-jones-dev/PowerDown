@@ -1,12 +1,25 @@
 using System;
 using System.IO;
 using Microsoft.Win32;
+using PowerDown.Core;
 
 namespace PowerDown.Platform.Windows.Services;
 
-public class SteamPathDetector
+public interface ISteamPathDetector
 {
-    public static string? DetectSteamPath(string? customPath)
+    string? DetectSteamPath(string? customPath);
+}
+
+public class SteamPathDetector : ISteamPathDetector
+{
+    private readonly ConsoleLogger _logger;
+
+    public SteamPathDetector(ConsoleLogger logger)
+    {
+        _logger = logger;
+    }
+
+    public string? DetectSteamPath(string? customPath)
     {
         if (!string.IsNullOrWhiteSpace(customPath))
         {
@@ -15,7 +28,7 @@ public class SteamPathDetector
                 return Path.GetFullPath(customPath);
             }
             
-            Console.WriteLine($"[WARN] Custom Steam path does not exist: {customPath}");
+            _logger.LogWarning($"Custom Steam path does not exist: {customPath}");
             return null;
         }
 
@@ -35,7 +48,7 @@ public class SteamPathDetector
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARN] Failed to read Steam path from registry: {ex.Message}");
+            _logger.LogWarning($"Failed to read Steam path from registry: {ex.Message}");
         }
 
         var defaultPath = Path.Combine(

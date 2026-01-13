@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -18,6 +18,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Cli.Tests", "tests\PowerDown.Cli.Tests\PowerDown.Cli.Tests.csproj", "{A7B8C9DA-EBC0-4F1B-3C4D-5E6F7A8B9C0D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.IntegrationTests", "tests\PowerDown.IntegrationTests\PowerDown.IntegrationTests.csproj", "{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B07BFD58-6DCD-48F0-8DCF-631264EAD2B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Platform.Linux", "src\PowerDown.Platform.Linux\PowerDown.Platform.Linux.csproj", "{ED512304-3079-485A-B593-7227FE9E26DA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Platform.macOS", "src\PowerDown.Platform.macOS\PowerDown.Platform.macOS.csproj", "{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -57,5 +63,17 @@ Global
 		{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED512304-3079-485A-B593-7227FE9E26DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED512304-3079-485A-B593-7227FE9E26DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED512304-3079-485A-B593-7227FE9E26DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED512304-3079-485A-B593-7227FE9E26DA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{ED512304-3079-485A-B593-7227FE9E26DA} = {B07BFD58-6DCD-48F0-8DCF-631264EAD2B7}
+		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000} = {B07BFD58-6DCD-48F0-8DCF-631264EAD2B7}
 	EndGlobalSection
 EndGlobal

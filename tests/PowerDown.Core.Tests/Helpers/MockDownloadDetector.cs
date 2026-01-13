@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using PowerDown.Abstractions;
 
@@ -24,17 +25,17 @@ public class MockDownloadDetector : IDownloadDetector
         _isActive = isActive;
     }
 
-    public Task<IEnumerable<GameDownloadInfo>> GetActiveDownloadsAsync()
+    public Task<IEnumerable<GameDownloadInfo>> GetActiveDownloadsAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult<IEnumerable<GameDownloadInfo>>(_downloads);
     }
 
-    public Task<bool> IsAnyDownloadOrInstallActiveAsync()
+    public Task<bool> IsAnyDownloadOrInstallActiveAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(_isActive);
     }
 
-    public Task<bool> InitializeAsync()
+    public Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
     {
         _initialized = true;
         return Task.FromResult(true);

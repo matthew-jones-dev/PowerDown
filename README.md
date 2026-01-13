@@ -1,4 +1,13 @@
+![Banner](assets/banner.jpg)
+
 # PowerDown
+
+[![Build](https://img.shields.io/github/actions/workflow/status/matthew-jones-dev/PowerDown/ci.yml?branch=main)](https://github.com/matthew-jones-dev/PowerDown/actions)
+[![Coverage](https://img.shields.io/coverage/github/matthew-jones-dev/PowerDown)](https://github.com/matthew-jones-dev/PowerDown/actions)
+[![Release](https://img.shields.io/github/v/release/matthew-jones-dev/PowerDown)](https://github.com/matthew-jones-dev/PowerDown/releases/latest)
+[![License](https://img.shields.io/github/license/matthew-jones-dev/PowerDown)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-8.0-purple)](https://dotnet.microsoft.com/)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-blue)]()
 
 Automatically shut down your PC when Steam or Epic Games finish downloading and installing games.
 
@@ -17,7 +26,7 @@ Automatically shut down your PC when Steam or Epic Games finish downloading and 
 ### Build from Source
 
 ```bash
-git clone https://github.com/yourusername/PowerDown.git
+git clone https://github.com/matthew-jones-dev/PowerDown.git
 cd PowerDown
 dotnet build PowerDown.sln
 ```

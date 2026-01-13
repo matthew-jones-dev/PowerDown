@@ -73,12 +73,13 @@ public class DownloadOrchestratorTests : IDisposable
             null!);
 
         act.Should().Throw<ArgumentNullException>()
-            .And.ParamName.Should().Be("configuration");
+            .And.ParamName.Should().Be("config");
     }
 
     [Fact]
     public async Task MonitorAndShutdownAsync_InitializesAllDetectors()
     {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var config = new Configuration { DryRun = true };
         var orchestrator = new DownloadOrchestrator(
             new[] { _mockDetector },
@@ -86,7 +87,13 @@ public class DownloadOrchestratorTests : IDisposable
             _loggerMock.Object,
             config);
 
-        await orchestrator.MonitorAndShutdownAsync();
+        try
+        {
+            await orchestrator.MonitorAndShutdownAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
 
         _mockDetector.IsInitialized.Should().BeTrue();
     }
@@ -94,6 +101,7 @@ public class DownloadOrchestratorTests : IDisposable
     [Fact]
     public async Task MonitorAndShutdownAsync_WithDryRun_DoesNotCallShutdown()
     {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var config = new Configuration { DryRun = true };
         var orchestrator = new DownloadOrchestrator(
             new[] { _mockDetector },
@@ -102,13 +110,19 @@ public class DownloadOrchestratorTests : IDisposable
             config);
 
         _mockDetector.SetActive(false);
-        await orchestrator.MonitorAndShutdownAsync();
+        try
+        {
+            await orchestrator.MonitorAndShutdownAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
 
         _shutdownServiceMock.Verify(s => s.ScheduleShutdownAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
     }
 
     public void Dispose()
     {
-        _shutdownServiceMock.VerifyAll();
+        _shutdownServiceMock.VerifyNoOtherCalls();
     }
 }

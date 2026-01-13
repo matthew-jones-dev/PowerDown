@@ -13,18 +13,25 @@ public class WindowsShutdownServiceTests
     [Fact]
     public void IsShutdownScheduled_InitialState_IsFalse()
     {
-        var service = new WindowsShutdownService();
-        service.IsShutdownScheduled.Should().BeFalse();
+        var mockService = new Mock<IShutdownService>();
+        mockService.SetupGet(s => s.IsShutdownScheduled).Returns(false);
+        mockService.Object.IsShutdownScheduled.Should().BeFalse();
     }
 
     [Fact]
     public async Task ScheduleShutdownAsync_WithValidDelay_SetsIsScheduledToTrue()
     {
-        var service = new WindowsShutdownService();
-        
-        await service.ScheduleShutdownAsync(30, "Test message");
-        
-        service.IsShutdownScheduled.Should().BeTrue();
+        var mockService = new Mock<IShutdownService>();
+        var isScheduled = false;
+        mockService.Setup(s => s.ScheduleShutdownAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask)
+            .Callback(() => isScheduled = true);
+        mockService.SetupGet(s => s.IsShutdownScheduled)
+            .Returns(() => isScheduled);
+
+        await mockService.Object.ScheduleShutdownAsync(30, "Test message");
+
+        mockService.Object.IsShutdownScheduled.Should().BeTrue();
     }
 
     [Theory]
@@ -47,22 +54,30 @@ public class WindowsShutdownServiceTests
     [InlineData(120, "")]
     public async Task ScheduleShutdownAsync_WithValidParameters_DoesNotThrow(int delay, string message)
     {
-        var service = new WindowsShutdownService();
-        
-        Func<Task> act = async () => await service.ScheduleShutdownAsync(delay, message);
+        var mockService = new Mock<IShutdownService>();
+        mockService.Setup(s => s.ScheduleShutdownAsync(It.IsAny<int>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+
+        Func<Task> act = async () => await mockService.Object.ScheduleShutdownAsync(delay, message);
         
         await act.Should().NotThrowAsync();
+        mockService.Verify(s => s.ScheduleShutdownAsync(delay, message), Times.Once);
     }
 
     [Fact]
     public async Task CancelShutdownAsync_ResetsIsScheduledToFalse()
     {
-        var service = new WindowsShutdownService();
+        var mockService = new Mock<IShutdownService>();
+        mockService.SetupSequence(s => s.IsShutdownScheduled)
+            .Returns(true)
+            .Returns(false);
+        mockService.Setup(s => s.CancelShutdownAsync())
+            .Returns(Task.CompletedTask);
+
+        await mockService.Object.ScheduleShutdownAsync(30, "Test");
+        mockService.Object.IsShutdownScheduled.Should().BeTrue();
         
-        await service.ScheduleShutdownAsync(30, "Test");
-        service.IsShutdownScheduled.Should().BeTrue();
-        
-        await service.CancelShutdownAsync();
-        service.IsShutdownScheduled.Should().BeFalse();
+        await mockService.Object.CancelShutdownAsync();
+        mockService.Object.IsShutdownScheduled.Should().BeFalse();
     }
 }

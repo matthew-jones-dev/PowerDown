@@ -21,7 +21,7 @@ This document provides guidelines for developing PowerDown, including setup, cod
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/PowerDown.git
+git clone https://github.com/matthew-jones-dev/PowerDown.git
 cd PowerDown
 ```
 

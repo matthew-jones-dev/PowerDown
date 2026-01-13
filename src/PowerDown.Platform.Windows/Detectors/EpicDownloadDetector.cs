@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using PowerDown.Abstractions;
+using PowerDown.Core;
 
 namespace PowerDown.Platform.Windows.Detectors;
 
@@ -13,13 +14,15 @@ public class EpicDownloadDetector : IDownloadDetector
     private readonly string? _epicPath;
     private readonly string _manifestsPath;
     private readonly string _launcherInstalledPath;
+    private readonly ConsoleLogger _logger;
     private readonly Dictionary<string, GameDownloadInfo> _activeDownloads = new();
 
     public string LauncherName => "Epic Games";
 
-    public EpicDownloadDetector(string? epicPath)
+    public EpicDownloadDetector(string? epicPath, ConsoleLogger logger)
     {
         _epicPath = epicPath;
+        _logger = logger;
         
         if (string.IsNullOrWhiteSpace(epicPath))
         {
@@ -40,43 +43,43 @@ public class EpicDownloadDetector : IDownloadDetector
             "LauncherInstalled.dat");
     }
 
-    public async Task<bool> InitializeAsync()
+    public async Task<bool> InitializeAsync(CancellationToken cancellationToken = default)
     {
         if (!Directory.Exists(_epicPath))
         {
             throw new DirectoryNotFoundException($"Epic Games directory not found: {_epicPath}");
         }
 
-        await ParseLauncherInstalledAsync();
+        await ParseLauncherInstalledAsync(cancellationToken);
         
         if (!Directory.Exists(_manifestsPath))
         {
-            Console.WriteLine($"[WARN] Epic manifest directory not found: {_manifestsPath}");
+            _logger.LogWarning($"Epic manifest directory not found: {_manifestsPath}");
         }
         else
         {
-            await ScanManifestsAsync();
+            await ScanManifestsAsync(cancellationToken);
         }
 
         return true;
     }
 
-    public async Task<IEnumerable<GameDownloadInfo>> GetActiveDownloadsAsync()
+    public async Task<IEnumerable<GameDownloadInfo>> GetActiveDownloadsAsync(CancellationToken cancellationToken = default)
     {
-        await ScanManifestsAsync();
+        await ScanManifestsAsync(cancellationToken);
         
         return _activeDownloads.Values.ToList();
     }
 
-    public async Task<bool> IsAnyDownloadOrInstallActiveAsync()
+    public async Task<bool> IsAnyDownloadOrInstallActiveAsync(CancellationToken cancellationToken = default)
     {
-        var downloads = await GetActiveDownloadsAsync();
+        var downloads = await GetActiveDownloadsAsync(cancellationToken);
         return downloads.Any(d => 
             d.DownloadStatus == DownloadStatus.Downloading || 
             d.InstallStatus == DownloadStatus.Installing);
     }
 
-    private async Task ParseLauncherInstalledAsync()
+    private async Task ParseLauncherInstalledAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(_launcherInstalledPath))
         {
@@ -85,7 +88,8 @@ public class EpicDownloadDetector : IDownloadDetector
 
         try
         {
-            var json = await File.ReadAllTextAsync(_launcherInstalledPath);
+            cancellationToken.ThrowIfCancellationRequested();
+            var json = await File.ReadAllTextAsync(_launcherInstalledPath, cancellationToken);
             var root = JsonSerializer.Deserialize<EpicLauncherRoot>(json);
             
             if (root?.InstallationList != null)
@@ -114,11 +118,11 @@ public class EpicDownloadDetector : IDownloadDetector
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARN] Error parsing LauncherInstalled.dat: {ex.Message}");
+            _logger.LogWarning($"Error parsing LauncherInstalled.dat: {ex.Message}");
         }
     }
 
-    private async Task ScanManifestsAsync()
+    private async Task ScanManifestsAsync(CancellationToken cancellationToken)
     {
         if (!Directory.Exists(_manifestsPath))
         {
@@ -131,20 +135,22 @@ public class EpicDownloadDetector : IDownloadDetector
             
             foreach (var manifestFile in manifestFiles)
             {
-                await ParseManifestAsync(manifestFile);
+                cancellationToken.ThrowIfCancellationRequested();
+                await ParseManifestAsync(manifestFile, cancellationToken);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARN] Error scanning Epic manifests: {ex.Message}");
+            _logger.LogWarning($"Error scanning Epic manifests: {ex.Message}");
         }
     }
 
-    private async Task ParseManifestAsync(string manifestFile)
+    private async Task ParseManifestAsync(string manifestFile, CancellationToken cancellationToken)
     {
         try
         {
-            var json = await File.ReadAllTextAsync(manifestFile);
+            cancellationToken.ThrowIfCancellationRequested();
+            var json = await File.ReadAllTextAsync(manifestFile, cancellationToken);
             var root = JsonSerializer.Deserialize<JsonElement>(json);
             
             if (root.ValueKind != JsonValueKind.Undefined &&
@@ -200,7 +206,7 @@ public class EpicDownloadDetector : IDownloadDetector
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARN] Error parsing manifest {manifestFile}: {ex.Message}");
+            _logger.LogWarning($"Error parsing manifest {manifestFile}: {ex.Message}");
         }
     }
 

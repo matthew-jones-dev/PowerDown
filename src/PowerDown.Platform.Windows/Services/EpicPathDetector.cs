@@ -1,12 +1,25 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using PowerDown.Core;
 
 namespace PowerDown.Platform.Windows.Services;
 
-public class EpicPathDetector
+public interface IEpicPathDetector
 {
-    public static string? DetectEpicPath(string? customPath)
+    string? DetectEpicPath(string? customPath);
+}
+
+public class EpicPathDetector : IEpicPathDetector
+{
+    private readonly ConsoleLogger _logger;
+
+    public EpicPathDetector(ConsoleLogger logger)
+    {
+        _logger = logger;
+    }
+
+    public string? DetectEpicPath(string? customPath)
     {
         if (!string.IsNullOrWhiteSpace(customPath))
         {
@@ -15,7 +28,7 @@ public class EpicPathDetector
                 return Path.GetFullPath(customPath);
             }
             
-            Console.WriteLine($"[WARN] Custom Epic path does not exist: {customPath}");
+            _logger.LogWarning($"Custom Epic path does not exist: {customPath}");
             return null;
         }
 
@@ -48,7 +61,7 @@ public class EpicPathDetector
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[WARN] Failed to parse LauncherInstalled.dat: {ex.Message}");
+            _logger.LogWarning($"Failed to parse LauncherInstalled.dat: {ex.Message}");
         }
 
         var defaultPath = Path.Combine(
