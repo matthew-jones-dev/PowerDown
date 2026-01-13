@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore PowerDown.sln
+
+      - name: Build
+        run: dotnet build PowerDown.sln --configuration Debug --no-restore
+
+      - name: Test
+        run: dotnet test PowerDown.sln --configuration Debug --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory TestResults --blame-hang-timeout 5min
+        env:
+          DOTNET_CLI_ENABLE_TELEMETRY: false
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.os }}
+          path: TestResults/**/coverage.cobertura.xml
+
+  coverage:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report-ubuntu-latest
+          path: coverage
+
+      - name: Find and copy coverage file
+        run: |
+          COVERAGE_FILE=$(find coverage -name "coverage.cobertura.xml" -type f | head -n 1)
+          echo "Found coverage file: $COVERAGE_FILE"
+          cp "$COVERAGE_FILE" coverage/coverage.cobertura.xml
+
+      - name: ReportGenerator
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.1
+        with:
+          reports: 'coverage/coverage.cobertura.xml'
+          targetdir: 'coveragereport'
+          reporttypes: 'Badges'
+
+      - name: Upload coverage badge
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-badge
+          path: coveragereport/
