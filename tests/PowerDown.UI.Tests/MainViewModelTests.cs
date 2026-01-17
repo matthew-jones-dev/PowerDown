@@ -232,6 +232,6 @@ public class MainViewModelTests
 
     private MainViewModel CreateViewModel()
     {
-        return new MainViewModel();
+        return new MainViewModel(_ => System.Threading.Tasks.Task.CompletedTask);
     }
 }

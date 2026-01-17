@@ -72,6 +72,7 @@ public class MainViewModel : INotifyPropertyChanged
 {
     private readonly Configuration _config;
     private readonly StatusNotifier _statusNotifier;
+    private readonly Func<CancellationToken, Task>? _monitoringRunner;
     private DownloadOrchestrator? _orchestrator;
     private CancellationTokenSource? _cts;
     private IShutdownService? _shutdownService;
@@ -261,8 +262,13 @@ public class MainViewModel : INotifyPropertyChanged
     
     public event PropertyChangedEventHandler? PropertyChanged;
     
-    public MainViewModel()
+    public MainViewModel() : this(null)
     {
+    }
+
+    public MainViewModel(Func<CancellationToken, Task>? monitoringRunner)
+    {
+        _monitoringRunner = monitoringRunner;
         _config = LoadConfiguration();
         _statusNotifier = new StatusNotifier();
         VerificationTotalChecks = _config.RequiredNoActivityChecks;
@@ -320,6 +326,12 @@ public class MainViewModel : INotifyPropertyChanged
         
         try
         {
+            if (_monitoringRunner != null)
+            {
+                await _monitoringRunner(_cts.Token).ConfigureAwait(false);
+                return;
+            }
+
             var serviceProvider = BuildServiceProvider();
             var logger = serviceProvider.GetRequiredService<ILogger>();
             
