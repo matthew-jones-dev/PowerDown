@@ -39,6 +39,7 @@ artifacts/
 publish/
 local/
 AGENTS.md
+scripts/sync-wsl.ps1
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
