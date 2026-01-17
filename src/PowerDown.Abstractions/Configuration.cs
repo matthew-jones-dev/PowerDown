@@ -1,11 +1,11 @@
-namespace PowerDown.Core;
+namespace PowerDown.Abstractions;
 
 public class Configuration
 {
-    private int _verificationDelaySeconds = 60;
-    private int _pollingIntervalSeconds = 10;
-    private int _requiredNoActivityChecks = 3;
-    private int _shutdownDelaySeconds = 30;
+    private int _verificationDelaySeconds = 120;
+    private int _pollingIntervalSeconds = 15;
+    private int _requiredNoActivityChecks = 5;
+    private int _shutdownDelaySeconds = 60;
 
     public int VerificationDelaySeconds
     {
@@ -36,9 +36,7 @@ public class Configuration
     }
 
     public bool MonitorSteam { get; set; } = true;
-    public bool MonitorEpic { get; set; } = true;
     public bool DryRun { get; set; }
     public bool Verbose { get; set; }
     public string? CustomSteamPath { get; set; }
-    public string? CustomEpicPath { get; set; }
 }

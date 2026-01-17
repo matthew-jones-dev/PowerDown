@@ -45,9 +45,10 @@ dotnet test
 
 ### 5. Run Application
 
+UI:
+
 ```bash
-cd src/PowerDown.Cli
-dotnet run
+dotnet run --project src/PowerDown.UI
 ```
 
 ## Project Structure
@@ -58,12 +59,15 @@ PowerDown/
 │   ├── PowerDown.Abstractions/          # Platform-agnostic interfaces
 │   ├── PowerDown.Core/                # Business logic
 │   ├── PowerDown.Platform.Windows/       # Windows implementations
-│   └── PowerDown.Cli/                # CLI application
+│   ├── PowerDown.Platform.Linux/         # Linux implementations
+│   ├── PowerDown.Platform.macOS/         # macOS implementations
+│   └── PowerDown.UI/                     # Desktop UI application
 ├── tests/
 │   ├── PowerDown.Core.Tests/
 │   ├── PowerDown.Platform.Windows.Tests/
-│   ├── PowerDown.Cli.Tests/
-│   └── PowerDown.IntegrationTests/
+│   ├── PowerDown.Platform.Linux.Tests/
+│   ├── PowerDown.Platform.macOS.Tests/
+│   └── PowerDown.UI.Tests/
 └── docs/
 ```
 
@@ -205,7 +209,7 @@ public async Task DownloadOrchestrator_WithDryRun_DoesNotCallShutdown()
 - **Core logic:** 90%+ coverage
 - **Platform logic:** 80%+ coverage
 - **Detection logic:** 70%+ coverage
-- **CLI:** 85%+ coverage
+- **UI:** 80%+ coverage
 - **Overall:** 75%+ coverage
 
 ## Adding Features
@@ -219,7 +223,7 @@ See [docs/API.md](API.md#adding-a-new-platform) for detailed guide.
 2. Implement `IPlatformDetector`
 3. Implement `IShutdownService`
 4. Implement `IDownloadDetector` for each launcher
-5. Update DI setup in `PowerDown.Cli/Program.cs`
+5. Update DI setup in `PowerDown.UI/ViewModels/MainViewModel.cs`
 6. Write tests in `PowerDown.Platform.NewPlatform.Tests`
 
 ### Adding a New Launcher
@@ -233,46 +237,11 @@ See [docs/API.md](API.md#adding-a-new-launcher) for detailed guide.
 4. Register in DI container
 5. Write tests
 
-### Adding CLI Arguments
+### Adding UI Settings
 
-1. Add option in `BuildRootCommand()` method:
-
-```csharp
-var newOption = new Option<bool>(
-    ["--new-option"],
-    description: "Description of option");
-
-rootCommand.AddOption(newOption);
-```
-
-2. Add parameter to handler:
-
-```csharp
-rootCommand.SetHandler(async (newOption, ...) =>
-{
-    return await HandleCommandAsync(..., newOption);
-},
-newOption,
-...);
-```
-
-3. Update `Configuration` class:
-
-```csharp
-public class Configuration
-{
-    public bool NewOption { get; set; }
-}
-```
-
-4. Use in logic:
-
-```csharp
-if (config.NewOption)
-{
-    // Handle new option
-}
-```
+1. Add the property to `Configuration`
+2. Bind it in `SettingsWindow.xaml` and `MainViewModel`
+3. Persist defaults in `src/PowerDown.UI/appsettings.json`
 
 ## Debugging
 
@@ -290,18 +259,10 @@ if (config.NewOption)
 
 ### Command-Line Debugging
 
-Run with verbose logging:
+Run with UI logging enabled (toggle **Verbose** in Settings), then attach:
 
 ```bash
-dotnet run -- --verbose
-```
-
-Attach debugger to running process:
-
-```bash
-dotnet run
-# In separate terminal
-dotnet attach <process-id>
+dotnet run --project src/PowerDown.UI
 ```
 
 ## Git Workflow
@@ -338,14 +299,9 @@ Follow conventional commits format:
 ```
 feat(steam): Add Steam download detection via log parsing
 
-Parse content_log.txt to detect download start, progress, and completion events.
+Parse content_log.txt to detect download start, activity, and completion events.
 ```
 
-```
-fix(epic): Handle missing LauncherInstalled.dat gracefully
-
-Added fallback to default path when Epic manifest file is not found.
-```
 
 ### Pull Request Process
 
@@ -451,7 +407,7 @@ When making changes:
 ### CPU Usage
 
 - Use `FileSystemWatcher` instead of constant polling
-- Poll only at necessary intervals (default: 10 seconds)
+- Poll only at necessary intervals (default: 15 seconds)
 - Avoid tight loops with `Thread.Sleep()`
 
 ## Security Guidelines
@@ -479,7 +435,7 @@ When making changes:
 ### Resources
 
 - [.NET Documentation](https://docs.microsoft.com/dotnet/)
-- [System.CommandLine Documentation](https://learn.microsoft.com/en-us/dotnet/standard/commandline/)
+- [Avalonia Documentation](https://docs.avaloniaui.net/)
 - [xUnit Documentation](https://xunit.net/)
 - [Moq Documentation](https://github.com/moq/moq4)
 - [FluentAssertions Documentation](https://fluentassertions.com/)

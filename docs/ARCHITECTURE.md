@@ -8,11 +8,11 @@ PowerDown follows a layered architecture with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      CLI Layer                            │
-│                (PowerDown.Cli)                        │
-│  - Command-line parsing                                 │
-│  - Dependency injection setup                              │
-│  - User interaction (Console output)                       │
+│                       UI Layer                            │
+│                (PowerDown.UI)                         │
+│  - Desktop UI (Avalonia)                                │
+│  - User interaction and settings                          │
+│  - Service wiring and orchestration                        │
 └────────────────────┬────────────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────────────┐
@@ -34,11 +34,11 @@ PowerDown follows a layered architecture with clear separation of concerns:
                      │
 ┌────────────────────▼────────────────────────────────────────┐
 │                  Platform Layer                           │
-│          (PowerDown.Platform.Windows)                      │
+│          (PowerDown.Platform.*)                            │
 │  - Platform-specific implementations                      │
 │  - OS-specific path detection                            │
 │  - Launcher-specific download detection                   │
-│  - System shutdown (Windows-specific)                     │
+│  - System shutdown per platform                           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -68,28 +68,28 @@ PowerDown follows a layered architecture with clear separation of concerns:
 
 **Key Design:** Platform-agnostic logic that works with any `IDownloadDetector` implementation.
 
-### 3. Platform Layer (`PowerDown.Platform.Windows`)
+### 3. Platform Layer (`PowerDown.Platform.*`)
 
-**Purpose:** Windows-specific implementations
-
-**Components:**
-- `WindowsPlatformDetector` - Windows OS detection
-- `WindowsShutdownService` - Windows shutdown via `shutdown.exe`
-- `SteamPathDetector` - Steam path detection (registry + fallback)
-- `EpicPathDetector` - Epic path detection (JSON + fallback)
-- `SteamDownloadDetector` - Steam download detection
-- `EpicDownloadDetector` - Epic download detection
-
-**Key Design:** All Windows-specific code isolated here. Other platforms would have their own projects.
-
-### 4. CLI Layer (`PowerDown.Cli`)
-
-**Purpose:** Command-line interface and user interaction
+**Purpose:** OS-specific implementations
 
 **Components:**
-- `Program.cs` - Entry point, DI setup, command-line parsing
+- `WindowsPlatformDetector` / `LinuxPlatformDetector` / `MacPlatformDetector`
+- `WindowsShutdownService` / `LinuxShutdownService` / `MacShutdownService`
+- `SteamPathDetector` variants per platform
+- `SteamDownloadDetector` variants per platform
 
-**Key Design:** Thin layer that wires up dependencies and delegates to core logic.
+**Key Design:** All OS-specific code isolated here. Each platform has its own project.
+
+### 4. UI Layer (`PowerDown.UI`)
+
+**Purpose:** Desktop interface and user interaction
+
+**Components:**
+- `App.xaml.cs` - Entry point and window bootstrap
+- `MainWindow.xaml` - UI layout
+- `MainViewModel` - State, commands, and orchestration
+
+**Key Design:** UI wiring and commands delegate to core logic.
 
 ## Key Design Patterns
 
@@ -126,17 +126,15 @@ Path detectors use factory-like static methods:
 
 ```csharp
 var steamPath = SteamPathDetector.DetectSteamPath(customPath);
-var epicPath = EpicPathDetector.DetectEpicPath(customPath);
 ```
 
 **Benefit:** Encapsulates complex path detection logic, easy to call.
 
 ### Strategy Pattern
 
-Different launchers use different detection strategies:
+Steam uses multiple detection strategies:
 
-- Steam: Log parsing + VDF file parsing + directory monitoring
-- Epic: JSON manifest parsing + LauncherInstalled.dat parsing
+- Log parsing + VDF file parsing + directory monitoring
 
 **Benefit:** Each launcher can use its own optimal detection approach.
 
@@ -159,19 +157,15 @@ public class CompositeDetector : IDownloadDetector
 ### Startup Flow
 
 ```
-1. User runs: PowerDown.exe --delay 120
+1. User runs: PowerDown.exe
    ↓
-2. Program.Main() parses CLI arguments
+2. App.xaml.cs sets up MainWindow and MainViewModel
    ↓
-3. BuildServiceProvider() configures DI container
+3. MainViewModel builds platform services
    ↓
-4. BuildRootCommand() sets up System.CommandLine
+4. User clicks Start Monitoring
    ↓
-5. HandleCommandAsync() validates arguments and creates Configuration
-   ↓
-6. DI container provides DownloadOrchestrator
-   ↓
-7. DownloadOrchestrator.MonitorAndShutdownAsync() called
+5. DownloadOrchestrator.MonitorAndShutdownAsync() called
 ```
 
 ### Detection Flow
@@ -183,9 +177,7 @@ public class CompositeDetector : IDownloadDetector
    ↓
 3. Steam: Reads Steam path from registry
    ↓
-4. Epic: Parses LauncherInstalled.dat
-   ↓
-5. Detectors ready to monitor
+4. Detectors ready to monitor
 ```
 
 ### Monitoring Flow
@@ -193,15 +185,15 @@ public class CompositeDetector : IDownloadDetector
 ```
 1. DownloadOrchestrator.WaitForDownloadsToStartAsync()
    ↓
-2. Polls detectors every 5 seconds
+2. Polls detectors based on the configured polling interval
    ↓
 3. When any detector reports active downloads:
    ↓
 4. DownloadOrchestrator.WaitForAllDownloadsToCompleteAsync()
    ↓
-5. Polls detectors every 10 seconds (configurable)
+5. Polls detectors based on the configured polling interval
    ↓
-6. Display active downloads with progress
+6. Display active downloads with status
    ↓
 7. When all downloads complete:
    ↓
@@ -211,9 +203,9 @@ public class CompositeDetector : IDownloadDetector
 ### Verification Flow
 
 ```
-1. Set polling interval: 10 seconds (configurable)
-2. Set total delay: 60 seconds (configurable)
-3. Set required checks: 3 consecutive (configurable)
+1. Set polling interval: 15 seconds (configurable)
+2. Set total delay: 120 seconds (configurable)
+3. Set required checks: 5 consecutive (configurable)
    ↓
 4. Loop:
    a. Wait for polling interval
@@ -238,8 +230,8 @@ public class CompositeDetector : IDownloadDetector
 3. If DryRun: Log "Would shutdown now"
    ↓
 4. If not DryRun:
-   a. Log "Initiating shutdown in 30 seconds"
-   b. Wait 30 seconds for CTRL+C cancellation
+   a. Schedule shutdown with configured delay
+   b. Allow cancellation via Stop Shutdown
    c. IShutdownService.ScheduleShutdownAsync(30, "PowerDown: All downloads complete")
    ↓
 5. WindowsShutdownService executes: shutdown.exe /s /t 30 /c "message"
@@ -269,7 +261,7 @@ public class CompositeDetector : IDownloadDetector
 
 **Property checked:** `IsShutdownScheduled`
 
-### Path Detectors (SteamPathDetector, EpicPathDetector)
+### Path Detectors (SteamPathDetector)
 
 **Responsibility:** Auto-detect launcher installation paths
 
@@ -280,18 +272,15 @@ public class CompositeDetector : IDownloadDetector
 
 **Returns:** `string?` (path or null if not found)
 
-### Download Detectors (SteamDownloadDetector, EpicDownloadDetector)
+### Download Detectors (SteamDownloadDetector)
 
-**Responsibility:** Detect and track download/installation progress
+**Responsibility:** Detect and track download/installation status
 
 **Steam detection methods:**
 - Parse `content_log.txt` for download events
 - Parse `appmanifest_*.acf` files for state
 - Monitor `steamapps\downloading\` directory
 
-**Epic detection methods:**
-- Parse `LauncherInstalled.dat` for installed games
-- Parse manifest JSON files for download/installation status
 
 ## Technology Choices
 
@@ -306,16 +295,16 @@ public class CompositeDetector : IDownloadDetector
 **Alternative considered:** .NET Framework
 **Rejected:** Windows-only, no cross-platform support
 
-### System.CommandLine
+### Avalonia UI
 
 **Why:**
-- Official Microsoft library
-- Professional argument parsing
-- Auto-generated help messages
-- Strong typing for arguments
+- Cross-platform desktop UI
+- XAML-based styling and layout
+- Active open source community
+- Themeable and extensible
 
-**Alternative considered:** Manual string parsing
-**Rejected:** Error-prone, poor UX, no auto-help
+**Alternative considered:** Platform-specific UI frameworks
+**Rejected:** Higher maintenance and no single cross-platform UI stack
 
 ### Dependency Injection (Microsoft.Extensions.DependencyInjection)
 
@@ -347,7 +336,7 @@ Create new project: `PowerDown.Platform.Linux`
 1. Implement `IPlatformDetector` - Detect Linux OS
 2. Implement `IShutdownService` - Linux shutdown command
 3. Implement `IDownloadDetector` for each launcher on Linux
-4. Update DI setup in `Program.cs`
+4. Update DI setup in `PowerDown.UI/ViewModels/MainViewModel.cs`
 
 ### Adding a New Launcher
 
@@ -384,13 +373,13 @@ Register in DI container in `Program.cs`
 
 ### Polling Intervals
 
-- Default: 10 seconds during monitoring
+- Default: 15 seconds during monitoring
 - Configurable via `--interval` flag
 - Balance between responsiveness and resource usage
 
 ### Verification Period
 
-- Default: 60 seconds total
+- Default: 120 seconds total
 - Default: 3 consecutive checks at 10-second intervals
 - Configurable via `--delay` and `--checks` flags
 - Prevents premature shutdown on resumed downloads

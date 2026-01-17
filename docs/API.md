@@ -20,7 +20,7 @@ public interface IDownloadDetector
 
 **Properties:**
 
-- `LauncherName` - Name of the launcher (e.g., "Steam", "Epic Games")
+- `LauncherName` - Name of the launcher (e.g., "Steam")
 
 **Methods:**
 
@@ -45,7 +45,7 @@ await detector.InitializeAsync();
 var downloads = await detector.GetActiveDownloadsAsync();
 foreach (var download in downloads)
 {
-    Console.WriteLine($"{download.GameName}: {download.Progress}%");
+    Console.WriteLine($"{download.GameName}: {download.DownloadStatus}");
 }
 
 var hasActivity = await detector.IsAnyDownloadOrInstallActiveAsync();
@@ -154,7 +154,7 @@ public class GameDownloadInfo
 - `GameName` - Name of the game
 - `DownloadStatus` - Current download status
 - `InstallStatus` - Current installation status
-- `Progress` - Progress percentage (0-100)
+- `Progress` - Optional progress percentage (0-100, may be 0 if unavailable)
 - `LauncherName` - Name of the launcher
 
 **Usage Example:**
@@ -165,11 +165,10 @@ var info = new GameDownloadInfo
     GameName = "Counter-Strike: Global Offensive",
     DownloadStatus = DownloadStatus.Downloading,
     InstallStatus = DownloadStatus.Unknown,
-    Progress = 78.5,
     LauncherName = "Steam"
 };
 
-Console.WriteLine($"{info.GameName}: {info.DownloadStatus} ({info.Progress}%)");
+Console.WriteLine($"{info.GameName}: {info.DownloadStatus}");
 ```
 
 ---
@@ -222,26 +221,24 @@ public class Configuration
     public int VerificationDelaySeconds { get; set; }
     public int PollingIntervalSeconds { get; set; }
     public int RequiredNoActivityChecks { get; set; }
+    public int ShutdownDelaySeconds { get; set; }
     public bool MonitorSteam { get; set; }
-    public bool MonitorEpic { get; set; }
     public bool DryRun { get; set; }
     public bool Verbose { get; set; }
     public string? CustomSteamPath { get; set; }
-    public string? CustomEpicPath { get; set; }
 }
 ```
 
 **Properties:**
 
-- `VerificationDelaySeconds` - Total verification delay in seconds (default: 60)
-- `PollingIntervalSeconds` - Polling interval in seconds (default: 10)
-- `RequiredNoActivityChecks` - Required consecutive idle checks (default: 3)
+- `VerificationDelaySeconds` - Total verification delay in seconds (default: 120)
+- `PollingIntervalSeconds` - Polling interval in seconds (default: 15)
+- `RequiredNoActivityChecks` - Required consecutive idle checks (default: 5)
+- `ShutdownDelaySeconds` - Delay before shutdown after verification (default: 60)
 - `MonitorSteam` - Enable Steam monitoring (default: true)
-- `MonitorEpic` - Enable Epic Games monitoring (default: true)
 - `DryRun` - Test mode without actual shutdown (default: false)
 - `Verbose` - Enable verbose logging (default: false)
 - `CustomSteamPath` - Custom Steam install directory (default: null)
-- `CustomEpicPath` - Custom Epic install directory (default: null)
 
 **Usage Example:**
 
@@ -252,7 +249,6 @@ var config = new Configuration
     PollingIntervalSeconds = 15,
     RequiredNoActivityChecks = 5,
     MonitorSteam = true,
-    MonitorEpic = false,
     DryRun = true,
     Verbose = true
 };
@@ -337,7 +333,7 @@ public class SteamDownloadDetectorLinux : IDownloadDetector
 
 5. **Register in DI Container**
 
-Update `PowerDown.Cli/Program.cs` to register Linux services:
+Update `PowerDown.UI/ViewModels/MainViewModel.cs` to register Linux services:
 
 ```csharp
 services.AddSingleton<LinuxPlatformDetector>();
@@ -413,7 +409,7 @@ public class GOGPathDetector
 
 3. **Register in DI Container**
 
-Update `PowerDown.Cli/Program.cs`:
+Update `PowerDown.UI/ViewModels/MainViewModel.cs`:
 
 ```csharp
 var detectors = new List<IDownloadDetector>();

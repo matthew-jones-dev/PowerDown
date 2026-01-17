@@ -1,20 +1,17 @@
 using System;
 using System.IO;
+using System.Runtime.Versioning;
 using Microsoft.Win32;
-using PowerDown.Core;
+using PowerDown.Abstractions.Interfaces;
 
 namespace PowerDown.Platform.Windows.Services;
 
-public interface ISteamPathDetector
-{
-    string? DetectSteamPath(string? customPath);
-}
-
+[SupportedOSPlatform("windows")]
 public class SteamPathDetector : ISteamPathDetector
 {
-    private readonly ConsoleLogger _logger;
+    private readonly ILogger _logger;
 
-    public SteamPathDetector(ConsoleLogger logger)
+    public SteamPathDetector(ILogger logger)
     {
         _logger = logger;
     }

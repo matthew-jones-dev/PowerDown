@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using PowerDown.Abstractions;
+using PowerDown.Abstractions.Interfaces;
 using PowerDown.Core;
 using PowerDown.Core.Detectors;
 
@@ -16,7 +17,7 @@ public class SteamDownloadDetector : SteamDownloadDetectorBase
 
     protected override string LineSeparator => Environment.NewLine;
 
-    public SteamDownloadDetector(string? steamPath, ConsoleLogger logger)
+    public SteamDownloadDetector(string? steamPath, ILogger logger)
         : base(steamPath, logger)
     {
         if (string.IsNullOrWhiteSpace(steamPath))
@@ -24,11 +25,7 @@ public class SteamDownloadDetector : SteamDownloadDetectorBase
             throw new InvalidOperationException("Steam path is not configured");
         }
 
-        _contentLogPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Steam",
-            "logs",
-            "content_log.txt");
+        _contentLogPath = Path.Combine(steamPath, "logs", "content_log.txt");
     }
 
     public override async Task<bool> InitializeAsync(CancellationToken cancellationToken = default)

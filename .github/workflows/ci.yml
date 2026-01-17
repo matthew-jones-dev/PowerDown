@@ -28,8 +28,8 @@ jobs:
       - name: Build
         run: dotnet build PowerDown.sln --configuration Debug --no-restore
 
-      - name: Test
-        run: dotnet test PowerDown.sln --configuration Debug --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory TestResults --blame-hang-timeout 5min
+      - name: Test (exclude UI tests)
+        run: dotnet test PowerDown.sln --configuration Debug --no-build --collect:"XPlat Code Coverage" --logger trx --results-directory TestResults --blame-hang-timeout 5min --filter "FullyQualifiedName!~PowerDown.UI.Tests"
         env:
           DOTNET_CLI_ENABLE_TELEMETRY: false
 

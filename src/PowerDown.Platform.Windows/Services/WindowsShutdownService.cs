@@ -1,9 +1,11 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using PowerDown.Abstractions;
 
 namespace PowerDown.Platform.Windows.Services;
 
+[SupportedOSPlatform("windows")]
 public class WindowsShutdownService : IShutdownService
 {
     public bool IsShutdownScheduled { get; private set; }
@@ -30,6 +32,10 @@ public class WindowsShutdownService : IShutdownService
         };
 
         var process = Process.Start(startInfo);
+        if (process == null)
+        {
+            throw new InvalidOperationException("Failed to start shutdown process.");
+        }
         await process.WaitForExitAsync();
 
         if (process.ExitCode == 0)
@@ -49,6 +55,10 @@ public class WindowsShutdownService : IShutdownService
         };
 
         var process = Process.Start(startInfo);
+        if (process == null)
+        {
+            throw new InvalidOperationException("Failed to start shutdown cancellation process.");
+        }
         await process.WaitForExitAsync();
 
         if (process.ExitCode == 0)

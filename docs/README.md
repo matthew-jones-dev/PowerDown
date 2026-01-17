@@ -17,7 +17,7 @@ Welcome to the PowerDown documentation. This repository contains comprehensive d
 
 1. [Build from source](../README.md#installation)
 2. [Run with default settings](../README.md#basic-usage)
-3. [Customize with command-line options](../README.md#command-line-options)
+3. [Adjust settings](../README.md#settings)
 
 ### For Developers
 
@@ -36,23 +36,22 @@ PowerDown is organized into four layers:
 1. **Abstractions** - Platform-agnostic interfaces and models
 2. **Core** - Shared business logic and orchestration
 3. **Platform** - OS-specific implementations (Windows, Linux, macOS)
-4. **CLI** - Command-line interface and user interaction
+4. **UI** - Desktop user interface and user interaction
 
-### Multi-Launcher Support
+### Launcher Support
 
-The system is designed to support multiple game launchers:
+The system currently focuses on Steam:
 
 - **Steam** - Monitors logs, manifests, and download directories
-- **Epic Games** - Monitors manifests and installation files
-- **Future** - GOG, Battle.net, Xbox, PlayStation (planned)
+- **Future** - Additional launchers (planned)
 
 ### Cross-Platform Architecture
 
 Platform-specific code is isolated in separate projects:
 
 - `PowerDown.Platform.Windows` - Windows implementations
-- `PowerDown.Platform.Linux` - Linux implementations (planned)
-- `PowerDown.Platform.MacOS` - macOS implementations (planned)
+- `PowerDown.Platform.Linux` - Linux implementations (experimental)
+- `PowerDown.Platform.MacOS` - macOS implementations (experimental)
 
 Core logic remains platform-agnostic, enabling easy addition of new platforms.
 
