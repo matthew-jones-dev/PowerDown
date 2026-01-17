@@ -72,7 +72,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Build release
-        run: dotnet publish src/PowerDown.Cli/PowerDown.Cli.csproj -c Release -r ${{ matrix.RID }} --self-contained false -p:PublishSingleFile=false -o ./publish/${{ matrix.RID }}
+        run: dotnet publish src/PowerDown.UI/PowerDown.UI.csproj -c Release -r ${{ matrix.RID }} --self-contained false -p:PublishSingleFile=false -o ./publish/${{ matrix.RID }}
 
       - name: Create artifact
         shell: pwsh
