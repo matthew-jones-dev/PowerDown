@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using PowerDown.Abstractions;
+using PowerDown.Abstractions.Interfaces;
 using PowerDown.Core.Services;
 
 namespace PowerDown.Core.Detectors;
@@ -19,9 +20,12 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
     private readonly string? _steamPath;
     private readonly string _downloadingPath;
     private readonly string _steamAppsPath;
-    private readonly ConsoleLogger _logger;
+    private readonly List<string> _steamAppsPaths = new();
+    private readonly List<string> _downloadingPaths = new();
+    private readonly ILogger _logger;
     private long _lastLogPosition = 0;
     private readonly Dictionary<string, GameDownloadInfo> _activeDownloads = new();
+    private readonly Dictionary<string, string> _appIdToName = new();
 
     /// <summary>
     /// Gets the platform-specific path to the Steam content log file.
@@ -43,7 +47,7 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
     /// <param name="logger">The logger instance.</param>
     /// <exception cref="ArgumentNullException">Thrown when logger is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown when steamPath is null or whitespace.</exception>
-    protected SteamDownloadDetectorBase(string? steamPath, ConsoleLogger logger)
+    protected SteamDownloadDetectorBase(string? steamPath, ILogger logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         
@@ -55,6 +59,8 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
         _steamPath = steamPath;
         _downloadingPath = Path.Combine(steamPath, "steamapps", "downloading");
         _steamAppsPath = Path.Combine(steamPath, "steamapps");
+        _steamAppsPaths.Add(_steamAppsPath);
+        _downloadingPaths.Add(_downloadingPath);
     }
 
     /// <inheritdoc />
@@ -64,6 +70,8 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
         {
             throw new DirectoryNotFoundException($"Steam directory not found: {_steamPath}");
         }
+
+        RefreshLibraryFolders();
 
         if (!File.Exists(ContentLogPath))
         {
@@ -105,7 +113,8 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
 
         try
         {
-            using var reader = new StreamReader(ContentLogPath);
+            using var stream = new FileStream(ContentLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream);
             
             if (!isInitial)
             {
@@ -115,7 +124,7 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
             var content = await reader.ReadToEndAsync();
             _lastLogPosition = reader.BaseStream.Position;
 
-            var lines = content.Split(new[] { LineSeparator }, StringSplitOptions.None);
+            var lines = Regex.Split(content, "\r?\n");
 
             foreach (var line in lines)
             {
@@ -134,6 +143,47 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
     /// <param name="line">The log line to parse.</param>
     protected void ParseLogLine(string line)
     {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return;
+        }
+
+        var updateChangedMatch = AppIdUpdateChangedRegex.Match(line);
+        if (updateChangedMatch.Success)
+        {
+            var appId = updateChangedMatch.Groups["id"].Value;
+            var state = updateChangedMatch.Groups["state"].Value;
+            UpdateDownloadFromState(appId, state);
+            return;
+        }
+
+        var updateStartedMatch = AppIdUpdateStartedRegex.Match(line);
+        if (updateStartedMatch.Success)
+        {
+            var appId = updateStartedMatch.Groups["id"].Value;
+            if (!_appIdToName.ContainsKey(appId))
+            {
+                return;
+            }
+            var info = EnsureGameInfoForAppId(appId);
+            info.DownloadStatus = DownloadStatus.Downloading;
+            info.InstallStatus = DownloadStatus.Unknown;
+            info.Progress = 0;
+            return;
+        }
+
+        var stateChangedMatch = AppIdStateChangedRegex.Match(line);
+        if (stateChangedMatch.Success)
+        {
+            var appId = stateChangedMatch.Groups["id"].Value;
+            var state = stateChangedMatch.Groups["state"].Value;
+            if (IsFullyInstalledState(state))
+            {
+                MarkIdle(appId);
+                return;
+            }
+        }
+
         var downloadingMatch = DownloadProgressRegex.Match(line);
         if (downloadingMatch.Success)
         {
@@ -172,11 +222,16 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
             return;
         }
 
-        if (Directory.Exists(_downloadingPath))
+        foreach (var downloadingPath in _downloadingPaths)
         {
+            if (!Directory.Exists(downloadingPath))
+            {
+                continue;
+            }
+
             try
             {
-                var downloadingDirs = Directory.GetDirectories(_downloadingPath);
+                var downloadingDirs = Directory.GetDirectories(downloadingPath);
                 foreach (var dir in downloadingDirs)
                 {
                     var dirName = Path.GetFileName(dir);
@@ -184,7 +239,7 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
                     {
                         var info = new GameDownloadInfo
                         {
-                            GameName = dirName,
+                            GameName = _appIdToName.TryGetValue(dirName, out var name) ? name : dirName,
                             LauncherName = LauncherName,
                             DownloadStatus = DownloadStatus.Downloading,
                             InstallStatus = DownloadStatus.Unknown,
@@ -220,7 +275,7 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
             return match.Groups[1].Value.Trim();
         }
 
-        return "Unknown Game";
+        return string.Empty;
     }
 
     /// <summary>
@@ -229,19 +284,24 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
     /// <param name="cancellationToken">Cancellation token.</param>
     protected async Task ScanAppManifestsAsync(CancellationToken cancellationToken)
     {
-        if (!Directory.Exists(_steamAppsPath))
-        {
-            return;
-        }
+        RefreshLibraryFolders();
 
         try
         {
-            var manifestFiles = Directory.GetFiles(_steamAppsPath, "appmanifest_*.acf");
-            
-            foreach (var manifestFile in manifestFiles)
+            foreach (var steamAppsPath in _steamAppsPaths)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                await ParseAppManifestAsync(manifestFile, cancellationToken);
+                if (!Directory.Exists(steamAppsPath))
+                {
+                    continue;
+                }
+
+                var manifestFiles = Directory.GetFiles(steamAppsPath, "appmanifest_*.acf");
+
+                foreach (var manifestFile in manifestFiles)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await ParseAppManifestAsync(manifestFile, cancellationToken);
+                }
             }
         }
         catch (Exception ex)
@@ -262,19 +322,31 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
             cancellationToken.ThrowIfCancellationRequested();
             var lines = await File.ReadAllLinesAsync(manifestFile, cancellationToken);
             
+            var appId = ExtractAppIdFromFileName(manifestFile);
             string? gameName = null;
             int? stateFlags = null;
+            long? bytesToDownload = null;
+            long? bytesDownloaded = null;
+            long? bytesToStage = null;
+            long? bytesStaged = null;
             
             foreach (var line in lines)
             {
                 var trimmed = line.Trim();
                 
-                if (trimmed.Contains("\"name\""))
+                if (trimmed.Contains("\"appid\""))
+                {
+                    var parts = trimmed.Split('"');
+                    if (parts.Length >= 4)
+                    {
+                        appId = parts[3];
+                    }
+                }
+                else if (trimmed.Contains("\"name\""))
                 {
                     var parts = trimmed.Split('"');
                     if (parts.Length >= 2)
                     {
-                        var key = parts[1];
                         if (parts.Length >= 4)
                         {
                             gameName = parts[3];
@@ -289,36 +361,65 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
                         stateFlags = flags;
                     }
                 }
+                else if (trimmed.Contains("\"BytesToDownload\""))
+                {
+                    bytesToDownload = TryParseLongField(trimmed);
+                }
+                else if (trimmed.Contains("\"BytesDownloaded\""))
+                {
+                    bytesDownloaded = TryParseLongField(trimmed);
+                }
+                else if (trimmed.Contains("\"BytesToStage\""))
+                {
+                    bytesToStage = TryParseLongField(trimmed);
+                }
+                else if (trimmed.Contains("\"BytesStaged\""))
+                {
+                    bytesStaged = TryParseLongField(trimmed);
+                }
             }
             
-            if (gameName == null || stateFlags == null)
+            if (appId == null && gameName == null)
             {
                 return;
             }
 
-            var (downloadStatus, installStatus, progress) = SteamStateFlags.Interpret(stateFlags.Value);
-
-            if (stateFlags.Value == SteamStateFlags.FullyInstalled)
+            var key = appId ?? gameName!;
+            var resolvedName = gameName ?? $"AppID {key}";
+            if (appId != null)
             {
-                _activeDownloads.Remove(gameName);
+                _appIdToName[appId] = resolvedName;
             }
-            else if (_activeDownloads.ContainsKey(gameName))
+
+            var (downloadStatus, installStatus, progress) = ResolveStatusFromManifest(
+                stateFlags,
+                bytesToDownload,
+                bytesDownloaded,
+                bytesToStage,
+                bytesStaged);
+
+            if (downloadStatus == DownloadStatus.Idle && installStatus == DownloadStatus.Idle)
             {
-                _activeDownloads[gameName].DownloadStatus = downloadStatus;
-                _activeDownloads[gameName].InstallStatus = installStatus;
-                _activeDownloads[gameName].Progress = progress;
+                _activeDownloads.Remove(key);
+            }
+            else if (_activeDownloads.ContainsKey(key))
+            {
+                _activeDownloads[key].DownloadStatus = downloadStatus;
+                _activeDownloads[key].InstallStatus = installStatus;
+                _activeDownloads[key].Progress = progress;
+                _activeDownloads[key].GameName = resolvedName;
             }
             else
             {
                 var info = new GameDownloadInfo
                 {
-                    GameName = gameName,
+                    GameName = resolvedName,
                     LauncherName = LauncherName,
                     DownloadStatus = downloadStatus,
                     InstallStatus = installStatus,
                     Progress = progress
                 };
-                _activeDownloads[gameName] = info;
+                _activeDownloads[key] = info;
             }
         }
         catch (Exception ex)
@@ -348,6 +449,220 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
         return _activeDownloads[gameName];
     }
 
+    private GameDownloadInfo EnsureGameInfoForAppId(string appId)
+    {
+        if (!_activeDownloads.ContainsKey(appId))
+        {
+            var gameName = _appIdToName.TryGetValue(appId, out var name)
+                ? name
+                : $"AppID {appId}";
+
+            _activeDownloads[appId] = new GameDownloadInfo
+            {
+                GameName = gameName,
+                LauncherName = LauncherName,
+                DownloadStatus = DownloadStatus.Unknown,
+                InstallStatus = DownloadStatus.Unknown,
+                Progress = 0
+            };
+        }
+        else if (_appIdToName.TryGetValue(appId, out var resolvedName))
+        {
+            _activeDownloads[appId].GameName = resolvedName;
+        }
+        return _activeDownloads[appId];
+    }
+
+    private void UpdateDownloadFromState(string appId, string state)
+    {
+        if (!_appIdToName.ContainsKey(appId))
+        {
+            return;
+        }
+
+        if (state.Contains("Downloading", StringComparison.OrdinalIgnoreCase))
+        {
+            var info = EnsureGameInfoForAppId(appId);
+            info.DownloadStatus = DownloadStatus.Downloading;
+            info.InstallStatus = DownloadStatus.Unknown;
+            info.Progress = 0;
+            return;
+        }
+
+        if (IsInstallingState(state))
+        {
+            var info = EnsureGameInfoForAppId(appId);
+            info.DownloadStatus = DownloadStatus.Idle;
+            info.InstallStatus = DownloadStatus.Installing;
+            info.Progress = 95;
+            return;
+        }
+
+        if (state.Contains("None", StringComparison.OrdinalIgnoreCase))
+        {
+            MarkIdle(appId);
+        }
+    }
+
+    private void MarkIdle(string appId)
+    {
+        if (!_appIdToName.ContainsKey(appId))
+        {
+            return;
+        }
+
+        if (_activeDownloads.TryGetValue(appId, out var info))
+        {
+            info.DownloadStatus = DownloadStatus.Idle;
+            info.InstallStatus = DownloadStatus.Idle;
+            info.Progress = 100;
+        }
+        else
+        {
+            _activeDownloads[appId] = new GameDownloadInfo
+            {
+                GameName = _appIdToName.TryGetValue(appId, out var name) ? name : $"AppID {appId}",
+                LauncherName = LauncherName,
+                DownloadStatus = DownloadStatus.Idle,
+                InstallStatus = DownloadStatus.Idle,
+                Progress = 100
+            };
+        }
+    }
+
+    private static bool IsInstallingState(string state)
+    {
+        return state.Contains("Staging", StringComparison.OrdinalIgnoreCase) ||
+               state.Contains("Committing", StringComparison.OrdinalIgnoreCase) ||
+               state.Contains("Preallocating", StringComparison.OrdinalIgnoreCase) ||
+               state.Contains("Reconfiguring", StringComparison.OrdinalIgnoreCase) ||
+               state.Contains("Validating", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsFullyInstalledState(string state)
+    {
+        return state.Contains("Fully Installed", StringComparison.OrdinalIgnoreCase) &&
+               !state.Contains("Update Running", StringComparison.OrdinalIgnoreCase) &&
+               !state.Contains("Update Started", StringComparison.OrdinalIgnoreCase) &&
+               !state.Contains("Update Queued", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static (DownloadStatus download, DownloadStatus install, double progress) ResolveStatusFromManifest(
+        int? stateFlags,
+        long? bytesToDownload,
+        long? bytesDownloaded,
+        long? bytesToStage,
+        long? bytesStaged)
+    {
+        var hasDownloadBytes = bytesToDownload.HasValue && bytesDownloaded.HasValue;
+        var hasStageBytes = bytesToStage.HasValue && bytesStaged.HasValue;
+
+        var remainingDownload = hasDownloadBytes ? Math.Max(0, bytesToDownload!.Value - bytesDownloaded!.Value) : 0;
+        var remainingStage = hasStageBytes ? Math.Max(0, bytesToStage!.Value - bytesStaged!.Value) : 0;
+
+        if (remainingDownload > 0)
+        {
+            return (DownloadStatus.Downloading, DownloadStatus.Unknown, CalculateProgress(bytesToDownload, bytesDownloaded, bytesToStage, bytesStaged));
+        }
+
+        if (remainingStage > 0)
+        {
+            return (DownloadStatus.Idle, DownloadStatus.Installing, CalculateProgress(bytesToDownload, bytesDownloaded, bytesToStage, bytesStaged));
+        }
+
+        if (stateFlags.HasValue)
+        {
+            return SteamStateFlags.Interpret(stateFlags.Value);
+        }
+
+        return (DownloadStatus.Idle, DownloadStatus.Idle, 100.0);
+    }
+
+    private static double CalculateProgress(
+        long? bytesToDownload,
+        long? bytesDownloaded,
+        long? bytesToStage,
+        long? bytesStaged)
+    {
+        var total = (bytesToDownload ?? 0) + (bytesToStage ?? 0);
+        var done = (bytesDownloaded ?? 0) + (bytesStaged ?? 0);
+
+        if (total <= 0)
+        {
+            return 0;
+        }
+
+        return Math.Clamp((double)done / total * 100.0, 0, 100);
+    }
+
+    private static long? TryParseLongField(string trimmedLine)
+    {
+        var parts = trimmedLine.Split('"');
+        if (parts.Length >= 4 && long.TryParse(parts[3], out var value))
+        {
+            return value;
+        }
+        return null;
+    }
+
+    private static string? ExtractAppIdFromFileName(string manifestFile)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(manifestFile);
+        if (fileName != null && fileName.StartsWith("appmanifest_", StringComparison.OrdinalIgnoreCase))
+        {
+            return fileName.Substring("appmanifest_".Length);
+        }
+        return null;
+    }
+
+    private void RefreshLibraryFolders()
+    {
+        var libraryFile = Path.Combine(_steamAppsPath, "libraryfolders.vdf");
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            _steamAppsPath
+        };
+
+        if (File.Exists(libraryFile))
+        {
+            try
+            {
+                var lines = File.ReadAllLines(libraryFile);
+                foreach (var line in lines)
+                {
+                    var trimmed = line.Trim();
+                    if (!trimmed.Contains("\"path\"", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var parts = trimmed.Split('"');
+                    if (parts.Length >= 4)
+                    {
+                        var path = parts[3].Replace("\\\\", "\\");
+                        if (!string.IsNullOrWhiteSpace(path))
+                        {
+                            var steamAppsPath = Path.Combine(path, "steamapps");
+                            paths.Add(steamAppsPath);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Error parsing Steam library folders: {ex.Message}");
+            }
+        }
+
+        _steamAppsPaths.Clear();
+        _downloadingPaths.Clear();
+        foreach (var path in paths)
+        {
+            _steamAppsPaths.Add(path);
+            _downloadingPaths.Add(Path.Combine(path, "downloading"));
+        }
+    }
+
     #region Pre-compiled Regex Patterns
 
     private static readonly Regex DownloadProgressRegex = new(
@@ -367,8 +682,20 @@ public abstract class SteamDownloadDetectorBase : IDownloadDetector
         RegexOptions.Compiled);
 
     private static readonly Regex ForGameRegex = new(
-        @"for\s+([^\[\]]+)",
+        @"for\s+(.+?)\s+-",
         RegexOptions.Compiled);
+
+    private static readonly Regex AppIdUpdateChangedRegex = new(
+        @"AppID\s+(?<id>\d+)\s+update changed\s*:\s*(?<state>.+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex AppIdUpdateStartedRegex = new(
+        @"AppID\s+(?<id>\d+)\s+update started\s*:\s*download",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex AppIdStateChangedRegex = new(
+        @"AppID\s+(?<id>\d+)\s+state changed\s*:\s*(?<state>.+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     #endregion
 }

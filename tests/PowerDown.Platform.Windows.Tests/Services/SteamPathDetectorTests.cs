@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.Versioning;
 using Xunit;
 using FluentAssertions;
 using PowerDown.Core;
@@ -7,6 +8,7 @@ using PowerDown.Platform.Windows.Services;
 
 namespace PowerDown.Platform.Windows.Tests.Services;
 
+[SupportedOSPlatform("windows")]
 public class SteamPathDetectorTests
 {
     private readonly SteamPathDetector _detector;

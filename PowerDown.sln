@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -9,21 +9,19 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Core", "src\Power
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Platform.Windows", "src\PowerDown.Platform.Windows\PowerDown.Platform.Windows.csproj", "{C3D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Cli", "src\PowerDown.Cli\PowerDown.Cli.csproj", "{D4E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Core.Tests", "tests\PowerDown.Core.Tests\PowerDown.Core.Tests.csproj", "{E5F6A7B8-C9DA-4E0F-1A2B-3C4D5E6F7A8B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Platform.Windows.Tests", "tests\PowerDown.Platform.Windows.Tests\PowerDown.Platform.Windows.Tests.csproj", "{F6A7B8C9-DAEB-4F0A-2B3C-4D5E6F7A8B9C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Cli.Tests", "tests\PowerDown.Cli.Tests\PowerDown.Cli.Tests.csproj", "{A7B8C9DA-EBC0-4F1B-3C4D-5E6F7A8B9C0D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.IntegrationTests", "tests\PowerDown.IntegrationTests\PowerDown.IntegrationTests.csproj", "{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B07BFD58-6DCD-48F0-8DCF-631264EAD2B7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Platform.Linux", "src\PowerDown.Platform.Linux\PowerDown.Platform.Linux.csproj", "{ED512304-3079-485A-B593-7227FE9E26DA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.Platform.macOS", "src\PowerDown.Platform.macOS\PowerDown.Platform.macOS.csproj", "{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.UI", "src\PowerDown.UI\PowerDown.UI.csproj", "{C0D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7FA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PowerDown.UI.Tests", "tests\PowerDown.UI.Tests\PowerDown.UI.Tests.csproj", "{D1E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,10 +41,6 @@ Global
 		{C3D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D4E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D4E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D4E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D4E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E5F6A7B8-C9DA-4E0F-1A2B-3C4D5E6F7A8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E5F6A7B8-C9DA-4E0F-1A2B-3C4D5E6F7A8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5F6A7B8-C9DA-4E0F-1A2B-3C4D5E6F7A8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -55,14 +49,6 @@ Global
 		{F6A7B8C9-DAEB-4F0A-2B3C-4D5E6F7A8B9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F6A7B8C9-DAEB-4F0A-2B3C-4D5E6F7A8B9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F6A7B8C9-DAEB-4F0A-2B3C-4D5E6F7A8B9C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A7B8C9DA-EBC0-4F1B-3C4D-5E6F7A8B9C0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A7B8C9DA-EBC0-4F1B-3C4D-5E6F7A8B9C0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A7B8C9DA-EBC0-4F1B-3C4D-5E6F7A8B9C0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A7B8C9DA-EBC0-4F1B-3C4D-5E6F7A8B9C0D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B8C9DAEB-C0D1-4F2C-4D5E-6F7A8B9C0D1E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{ED512304-3079-485A-B593-7227FE9E26DA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{ED512304-3079-485A-B593-7227FE9E26DA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ED512304-3079-485A-B593-7227FE9E26DA}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -71,9 +57,18 @@ Global
 		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{ED512304-3079-485A-B593-7227FE9E26DA} = {B07BFD58-6DCD-48F0-8DCF-631264EAD2B7}
 		{BA984BFD-E401-4C3A-A9F2-D12AE14DA000} = {B07BFD58-6DCD-48F0-8DCF-631264EAD2B7}
+		{C0D4E5F6-A7B8-4C5D-0E1F-2A3B4C5D6E7FA} = {B07BFD58-6DCD-48F0-8DCF-631264EAD2B7}
 	EndGlobalSection
 EndGlobal

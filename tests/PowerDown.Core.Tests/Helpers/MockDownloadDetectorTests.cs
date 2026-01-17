@@ -19,50 +19,50 @@ public class MockDownloadDetectorTests
     }
 
     [Fact]
-    public void GetActiveDownloadsAsync_ReturnsEmptyListInitially()
+    public async Task GetActiveDownloadsAsync_ReturnsEmptyListInitially()
     {
         var detector = new MockDownloadDetector();
-        var downloads = detector.GetActiveDownloadsAsync().Result;
+        var downloads = await detector.GetActiveDownloadsAsync();
         downloads.Should().BeEmpty();
     }
 
     [Fact]
-    public void IsAnyDownloadOrInstallActiveAsync_ReturnsFalseInitially()
+    public async Task IsAnyDownloadOrInstallActiveAsync_ReturnsFalseInitially()
     {
         var detector = new MockDownloadDetector();
-        var result = detector.IsAnyDownloadOrInstallActiveAsync().Result;
+        var result = await detector.IsAnyDownloadOrInstallActiveAsync();
         result.Should().BeFalse();
     }
 
     [Fact]
-    public void IsAnyDownloadOrInstallActiveAsync_ReturnsTrueWhenActive()
+    public async Task IsAnyDownloadOrInstallActiveAsync_ReturnsTrueWhenActive()
     {
         var detector = new MockDownloadDetector(isActive: true);
-        var result = detector.IsAnyDownloadOrInstallActiveAsync().Result;
+        var result = await detector.IsAnyDownloadOrInstallActiveAsync();
         result.Should().BeTrue();
     }
 
     [Fact]
-    public void InitializeAsync_SetsInitializedToTrue()
+    public async Task InitializeAsync_SetsInitializedToTrue()
     {
         var detector = new MockDownloadDetector();
-        var result = detector.InitializeAsync().Result;
+        var result = await detector.InitializeAsync();
         result.Should().BeTrue();
         detector.IsInitialized.Should().BeTrue();
     }
 
     [Fact]
-    public void SetActive_ChangesActiveState()
+    public async Task SetActive_ChangesActiveState()
     {
         var detector = new MockDownloadDetector(isActive: false);
-        detector.IsAnyDownloadOrInstallActiveAsync().Result.Should().BeFalse();
+        (await detector.IsAnyDownloadOrInstallActiveAsync()).Should().BeFalse();
 
         detector.SetActive(true);
-        detector.IsAnyDownloadOrInstallActiveAsync().Result.Should().BeTrue();
+        (await detector.IsAnyDownloadOrInstallActiveAsync()).Should().BeTrue();
     }
 
     [Fact]
-    public void SetDownloads_ReplacesDownloadList()
+    public async Task SetDownloads_ReplacesDownloadList()
     {
         var detector = new MockDownloadDetector();
         
@@ -78,7 +78,7 @@ public class MockDownloadDetectorTests
         };
         
         detector.SetDownloads(downloads);
-        var result = detector.GetActiveDownloadsAsync().Result;
+        var result = await detector.GetActiveDownloadsAsync();
         
         result.Should().HaveCount(1);
         result.Should().Contain(d => d.GameName == "Test Game");
@@ -87,9 +87,9 @@ public class MockDownloadDetectorTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void Constructor_WithIsActiveParameter_SetsInitialState(bool isActive)
+    public async Task Constructor_WithIsActiveParameter_SetsInitialState(bool isActive)
     {
         var detector = new MockDownloadDetector(isActive);
-        detector.IsAnyDownloadOrInstallActiveAsync().Result.Should().Be(isActive);
+        (await detector.IsAnyDownloadOrInstallActiveAsync()).Should().Be(isActive);
     }
 }

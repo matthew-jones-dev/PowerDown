@@ -1,21 +1,14 @@
 using System;
 using System.IO;
-using PowerDown.Abstractions;
-using PowerDown.Core;
+using PowerDown.Abstractions.Interfaces;
 
 namespace PowerDown.Platform.Linux.Services;
 
-public interface ILinuxPathDetector
+public class LinuxSteamPathDetector : ISteamPathDetector
 {
-    string? DetectSteamPath(string? customPath);
-    string? DetectEpicPath(string? customPath);
-}
+    private readonly ILogger _logger;
 
-public class LinuxPathDetector : ILinuxPathDetector
-{
-    private readonly ConsoleLogger _logger;
-
-    public LinuxPathDetector(ConsoleLogger logger)
+    public LinuxSteamPathDetector(ILogger logger)
     {
         _logger = logger;
     }
@@ -34,51 +27,23 @@ public class LinuxPathDetector : ILinuxPathDetector
         }
 
         var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var steamPath = Path.Combine(homeDir, ".local", "share", "Steam");
-
-        if (Directory.Exists(steamPath))
+        var candidates = new[]
         {
-            return steamPath;
-        }
+            Path.Combine(homeDir, ".local", "share", "Steam"),
+            Path.Combine(homeDir, ".steam", "steam"),
+            Path.Combine(homeDir, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
+            Path.Combine(homeDir, "snap", "steam", "common", ".steam", "steam")
+        };
 
-        var protonPath = Path.Combine(homeDir, ".steam", "steam");
-        if (Directory.Exists(protonPath))
+        foreach (var candidate in candidates)
         {
-            return protonPath;
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
         }
 
         _logger.LogWarning("Steam installation not found on Linux");
-        return null;
-    }
-
-    public string? DetectEpicPath(string? customPath)
-    {
-        if (!string.IsNullOrWhiteSpace(customPath))
-        {
-            if (Directory.Exists(customPath))
-            {
-                return Path.GetFullPath(customPath);
-            }
-            
-            _logger.LogWarning($"Custom Epic path does not exist: {customPath}");
-            return null;
-        }
-
-        var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var epicPath = Path.Combine(homeDir, ".local", "share", "Epic");
-
-        if (Directory.Exists(epicPath))
-        {
-            return epicPath;
-        }
-
-        var gamesPath = Path.Combine(homeDir, "Games", "Epic");
-        if (Directory.Exists(gamesPath))
-        {
-            return gamesPath;
-        }
-
-        _logger.LogWarning("Epic Games installation not found on Linux");
         return null;
     }
 }

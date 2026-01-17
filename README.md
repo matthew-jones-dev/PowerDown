@@ -3,25 +3,36 @@
 # PowerDown
 
 [![Build](https://img.shields.io/github/actions/workflow/status/matthew-jones-dev/PowerDown/ci.yml?branch=main)](https://github.com/matthew-jones-dev/PowerDown/actions)
-[![Coverage](https://img.shields.io/coverage/github/matthew-jones-dev/PowerDown)](https://github.com/matthew-jones-dev/PowerDown/actions)
 [![Release](https://img.shields.io/github/v/release/matthew-jones-dev/PowerDown)](https://github.com/matthew-jones-dev/PowerDown/releases/latest)
 [![License](https://img.shields.io/github/license/matthew-jones-dev/PowerDown)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0-purple)](https://dotnet.microsoft.com/)
 [![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20macOS-blue)]()
 
-Automatically shut down your PC when Steam or Epic Games finish downloading and installing games.
+Automatically shut down your PC when Steam finishes downloading and installing games.
 
 ## Features
 
-- **Multi-Launcher Support** - Monitor Steam and Epic Games simultaneously
-- **Smart Detection** - Tracks both download and installation progress
+- **Steam Monitoring** - Track Steam downloads and installs
+- **Smart Detection** - Tracks download and installation status without relying on percentages
 - **Verification Polling** - Confirms downloads are truly complete before shutting down
-- **Cross-Platform Architecture** - Designed for Windows, Linux, and macOS (Windows currently supported)
+- **Cross-Platform Architecture** - Designed for Windows, Linux, and macOS (Windows supported today; Linux/macOS experimental)
 - **Configurable Delays** - Adjust verification time, polling interval, and required checks
 - **Safe Mode** - Dry-run option to test without actual shutdown
-- **Graceful Cancellation** - Cancel with CTRL+C during verification period
+- **Graceful Cancellation** - Stop shutdown from the UI at any time
 
 ## Installation
+
+### Download (Recommended)
+
+Grab the latest Windows build from the releases page:
+
+https://github.com/matthew-jones-dev/PowerDown/releases/latest
+
+Download the Windows zip, extract it anywhere, and run `PowerDown.exe`. No repo clone required.
+
+What you get:
+- A portable folder with `PowerDown.exe`
+- `appsettings.json` in the same folder for configuration
 
 ### Build from Source
 
@@ -31,136 +42,90 @@ cd PowerDown
 dotnet build PowerDown.sln
 ```
 
-### Run
+### Run (UI)
 
 ```bash
-cd src/PowerDown.Cli
-dotnet run
+dotnet run --project src/PowerDown.UI
+```
+
+Convenience scripts:
+
+```bat
+scripts\run-ui.cmd
+```
+
+```bash
+./scripts/run-ui.sh
 ```
 
 ## Usage
 
-### Basic Usage
+### Basic Usage (UI)
 
-Monitor both Steam and Epic Games with default settings:
+Launch the app, click **Start Monitoring**, and leave it running while Steam finishes.
 
 ```bash
 PowerDown.exe
 ```
 
-### Advanced Usage
+### Settings
 
-Monitor only Steam:
+Use the in-app **Settings** button, or edit `appsettings.json` next to `PowerDown.exe`:
 
-```bash
-PowerDown.exe --steam-only
+```json
+{
+  "PowerDown": {
+    "VerificationDelaySeconds": 120,
+    "PollingIntervalSeconds": 15,
+    "RequiredNoActivityChecks": 5,
+    "ShutdownDelaySeconds": 60,
+    "MonitorSteam": true,
+    "DryRun": false,
+    "Verbose": false,
+    "CustomSteamPath": ""
+  }
+}
 ```
-
-Monitor only Epic Games:
-
-```bash
-PowerDown.exe --epic-only
-```
-
-Custom verification delay (120 seconds):
-
-```bash
-PowerDown.exe --delay 120
-```
-
-Verbose logging:
-
-```bash
-PowerDown.exe --verbose
-```
-
-Custom Steam installation path:
-
-```bash
-PowerDown.exe --steam-path "D:\Steam"
-```
-
-Custom Epic Games installation path:
-
-```bash
-PowerDown.exe --epic-path "E:\Epic Games"
-```
-
-Dry-run mode (test without actual shutdown):
-
-```bash
-PowerDown.exe --dry-run
-```
-
-### Command-Line Options
-
-| Option | Short | Description | Default |
-|---------|--------|-------------|----------|
-| `--delay` | `-d` | Verification delay in seconds | 60 |
-| `--interval` | `-i` | Polling interval in seconds | 10 |
-| `--checks` | `-c` | Required consecutive idle checks | 3 |
-| `--steam-only` | `-s` | Monitor Steam only | Both |
-| `--epic-only` | `-e` | Monitor Epic Games only | Both |
-| `--steam-path` | | Custom Steam install directory | Auto-detected |
-| `--epic-path` | | Custom Epic Games install directory | Auto-detected |
-| `--dry-run` | `-r` | Test mode without actual shutdown | false |
-| `--verbose` | `-v` | Enable verbose logging | false |
-| `--help` | `-h` | Show help message | |
 
 ## How It Works
 
-1. **Detection** - Monitors Steam logs and Epic manifests for download activity
-2. **Tracking** - Shows active downloads with progress percentages
+1. **Detection** - Monitors Steam logs and manifests for download activity
+2. **Tracking** - Shows active downloads with status updates
 3. **Completion** - Detects when all downloads and installations are complete
-4. **Verification** - Polls for 60 seconds (configurable) to ensure no new downloads start
+4. **Verification** - Polls for 120 seconds (configurable) to ensure no new downloads start
 5. **Shutdown** - Schedules Windows shutdown after verification passes
 
 ## Configuration
 
 ### Auto-Detection
 
-PowerDown automatically detects installation paths:
+PowerDown automatically detects installation paths (Windows shown below; Linux/macOS use standard install locations when available):
 
 **Steam:**
 - Reads from: `HKCU\Software\Valve\Steam\SteamPath`
 - Falls back to: `%ProgramFiles%\Steam`
-
-**Epic Games:**
-- Parses: `%ProgramData%\Epic\UnrealEngineLauncher\LauncherInstalled.dat`
-- Falls back to: `%ProgramFiles%\Epic Games`
 
 ### Manual Path Override
 
 If auto-detection fails, provide custom paths:
 
 ```bash
-PowerDown.exe --steam-path "D:\Steam" --epic-path "E:\Epic Games"
+PowerDown.exe --steam-path "D:\Steam"
 ```
 
 ## Supported Platforms
 
 ### Current
 
-- **Windows** - Full support for Steam and Epic Games
-
-### Future
-
-- **Linux** - Planned support
-- **macOS** - Planned support
+- **Windows** - Full support for Steam
+- **Linux** - Experimental support
+- **macOS** - Experimental support
 
 ## Supported Launchers
 
 ### Current
 
 - **Steam** - Full detection and monitoring
-- **Epic Games** - Full detection and monitoring
-
-### Future
-
-- **GOG Galaxy** - Planned
-- **Battle.net** - Planned
-- **Xbox Game Pass** - Planned
-- **PlayStation** - Evaluated
 
 ## Development
 
@@ -180,15 +145,10 @@ See [docs/TESTING.md](docs/TESTING.md) for testing strategy and guidelines.
 
 ## Roadmap
 
-- [ ] Linux platform support
-- [ ] macOS platform support
-- [ ] GOG Galaxy integration
-- [ ] Battle.net integration
-- [ ] Configuration file support
-- [ ] GUI application
+- [ ] Stabilize Linux/macOS support
+- [ ] Signed Windows installer
 - [ ] System tray integration
-- [ ] Remote control via HTTP API
-- [ ] Web dashboard
+- [ ] Additional launchers (GOG, Battle.net, etc.)
 
 ## Contributing
 
@@ -201,5 +161,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Steam detection inspired by various Steam community tools
-- Epic Games detection using Epic's JSON manifest format
-- Built with .NET 8 and System.CommandLine
+- Built with .NET 8 and Avalonia

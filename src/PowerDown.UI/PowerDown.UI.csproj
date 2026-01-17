@@ -1,18 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>PowerDown.Cli</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>PowerDown</AssemblyName>
+    <RootNamespace>PowerDown.UI</RootNamespace>
+    <NoWarn>NU1605</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="Avalonia" Version="11.0.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.0.0" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.0.0" />
+    <PackageReference Include="Avalonia.ReactiveUI" Version="11.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
@@ -20,15 +23,21 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <ProjectReference Include="..\PowerDown.Abstractions\PowerDown.Abstractions.csproj" />
+    <ProjectReference Include="..\PowerDown.Core\PowerDown.Core.csproj" />
+    <ProjectReference Include="..\PowerDown.Platform.Linux\PowerDown.Platform.Linux.csproj" />
+    <ProjectReference Include="..\PowerDown.Platform.macOS\PowerDown.Platform.macOS.csproj" />
+    <ProjectReference Include="..\PowerDown.Platform.Windows\PowerDown.Platform.Windows.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PowerDown.Abstractions\PowerDown.Abstractions.csproj" />
-    <ProjectReference Include="..\PowerDown.Core\PowerDown.Core.csproj" />
-    <ProjectReference Include="..\PowerDown.Platform.Windows\PowerDown.Platform.Windows.csproj" />
+    <AvaloniaXaml Include="**\*.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

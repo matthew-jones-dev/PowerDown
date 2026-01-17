@@ -131,7 +131,7 @@ Implement polling-based verification with configurable total delay and required 
 **Status:** Accepted
 
 **Context:**
-Many games, especially on Epic Games, have separate download and installation phases. Shutdown must wait for both to complete.
+Many games have separate download and installation phases. Shutdown must wait for both to complete.
 
 **Decision:**
 Track `DownloadStatus` and `InstallStatus` separately in `GameDownloadInfo`. Both must be `Idle` for game to be considered complete.
@@ -139,13 +139,13 @@ Track `DownloadStatus` and `InstallStatus` separately in `GameDownloadInfo`. Bot
 **Rationale:**
 - **Accurate completion:** Game is only truly ready when installed
 - **User expectation:** Users expect game to be fully installed, not just downloaded
-- **Better UX:** Shows both statuses separately (e.g., "Downloading 50%" vs "Installing 95%")
+- **Better UX:** Shows both statuses separately (e.g., "Downloading" vs "Installing")
 
 **Consequences:**
 
 **Positive:**
 - More accurate completion detection
-- Better user experience with detailed progress
+- Better user experience with detailed status
 - Prevents premature shutdown during installation
 - Handles games with long installation times
 
@@ -156,36 +156,33 @@ Track `DownloadStatus` and `InstallStatus` separately in `GameDownloadInfo`. Bot
 
 ---
 
-## ADR-006: Use System.CommandLine for CLI Parsing
+## ADR-006: Use Avalonia for Cross-Platform UI
 
 **Status:** Accepted
 
 **Context:**
-The application requires flexible command-line argument parsing with validation, help generation, and multiple options.
+The application targets gamers on Windows, Linux, and macOS and needs a consistent desktop UI experience.
 
 **Decision:**
-Use `System.CommandLine` (Microsoft's official CLI library) for argument parsing.
+Use Avalonia for the cross-platform desktop UI.
 
 **Rationale:**
-- **Official library:** Maintained by Microsoft, well-documented
-- **Type safety:** Strongly typed argument values
-- **Auto-help:** Automatic generation of help messages
-- **Validation:** Built-in validation for argument types
-- **Industry standard:** Used by many .NET CLI tools
+- **Cross-platform:** Single UI stack for Windows, Linux, and macOS
+- **XAML-based:** Familiar layout and styling workflow
+- **Active community:** Well-supported open source project
+- **Theming:** Enables consistent branding and modern visuals
 
 **Consequences:**
 
 **Positive:**
-- Professional CLI experience
-- Auto-generated help messages
-- Type-safe argument parsing
-- Less boilerplate code
-- Easy to add new arguments
+- Consistent UI across platforms
+- Fast iteration with XAML and styles
+- Easier onboarding for non-technical users
+- Simplifies future UI enhancements
 
 **Negative:**
 - External dependency
-- Learning curve for developers new to the library
-- Beta version (as of development time)
+- Requires UI testing and visual validation
 
 ---
 
@@ -197,7 +194,7 @@ Use `System.CommandLine` (Microsoft's official CLI library) for argument parsing
 The application needs to detect log file changes for real-time download monitoring. Constant polling of files is inefficient.
 
 **Decision:**
-Use `FileSystemWatcher` to monitor Steam and Epic log/manifest files for changes, with polling fallback for status checks.
+Use `FileSystemWatcher` to monitor Steam log/manifest files for changes, with polling fallback for status checks.
 
 **Rationale:**
 - **Efficient:** Event-driven, no constant polling
@@ -251,7 +248,7 @@ Implement `CompositeDetector` class that aggregates multiple `IDownloadDetector`
 
 ---
 
-## ADR-009: Colored Console Output with Log Levels
+## ADR-009: Log Levels for User-Facing Status
 
 **Status:** Accepted
 
@@ -259,66 +256,33 @@ Implement `CompositeDetector` class that aggregates multiple `IDownloadDetector`
 The application needs to communicate status to users clearly. Different message types (info, warning, error) should be visually distinct.
 
 **Decision:**
-Implement `ConsoleLogger` with colored output using `Console.ForegroundColor` and log levels (Info, Warning, Error, Verbose, Success).
+Implement `ILogger` with log levels (Info, Warning, Error, Verbose, Success) and surface them through the UI.
 
 **Rationale:**
 - **Better UX:** Visual distinction helps users quickly identify important messages
-- **Professional:** Matches CLI tools' best practices
 - **Configurable:** Verbose logging optional
 - **Built-in:** Uses .NET's `Console` class, no dependencies
 
 **Consequences:**
 
 **Positive:**
-- Clear, readable console output
+- Clear, readable status messaging
 - Easy to identify warnings and errors
 - Optional verbose mode for debugging
 - No external dependencies
 
 **Negative:**
-- Color codes may not work in all terminal emulators
-- Windows Terminal required for best experience
+- Requires UI wiring for message display
 - Adds logging class to maintain
 
 ---
 
-## ADR-010: Epic Path Detection via LauncherInstalled.dat
+## ADR-010: Steam Log Parsing for Download Detection
 
 **Status:** Accepted
 
 **Context:**
-Epic Games Launcher stores installation information. The application needs to detect Epic Games path without user configuration.
-
-**Decision:**
-Parse `LauncherInstalled.dat` JSON file in `%ProgramData%\Epic\UnrealEngineLauncher\` to detect Epic Games path and installed games.
-
-**Rationale:**
-- **Official format:** Epic's documented file for installation tracking
-- **Reliable:** Maintained by Epic Games Launcher
-- **Rich information:** Contains game names, versions, and installation locations
-- **Fallback:** Use default path if file is unavailable
-
-**Consequences:**
-
-**Positive:**
-- Automatic detection of Epic Games and installed games
-- Access to game metadata (names, versions)
-- Works with custom Epic installations
-- Fallback to default path ensures functionality
-
-**Negative:**
-- JSON parsing adds complexity
-- File location may vary (but standard location exists)
-- Requires JSON deserialization
-
----
-
-## ADR-011: Steam Log Parsing for Download Detection
-
-**Status:** Accepted
-
-**Context:**
-Steam writes download events to `content_log.txt`. The application needs to parse these logs to detect download progress and completion.
+Steam writes download events to `content_log.txt`. The application needs to parse these logs to detect download activity and completion.
 
 **Decision:**
 Parse Steam's `content_log.txt` file using regex patterns to match download events (Starting, Downloading, Download complete, Installed).
@@ -332,7 +296,7 @@ Parse Steam's `content_log.txt` file using regex patterns to match download even
 **Consequences:**
 
 **Positive:**
-- Detects download progress in real-time
+- Detects download activity in real-time
 - Shows game names from log messages
 - No external API dependencies
 - Works with all Steam versions
@@ -349,10 +313,10 @@ Parse Steam's `content_log.txt` file using regex patterns to match download even
 **Status:** Accepted
 
 **Context:**
-The application has multiple concerns: abstractions, core logic, platform code, CLI, and tests. Clear organization is essential for maintainability.
+The application has multiple concerns: abstractions, core logic, platform code, UI, and tests. Clear organization is essential for maintainability.
 
 **Decision:**
-Organize solution into distinct projects: `PowerDown.Abstractions`, `PowerDown.Core`, `PowerDown.Platform.Windows`, `PowerDown.Cli`, plus separate test projects for each.
+Organize solution into distinct projects: `PowerDown.Abstractions`, `PowerDown.Core`, `PowerDown.Platform.Windows`, `PowerDown.Platform.Linux`, `PowerDown.Platform.macOS`, `PowerDown.UI`, plus separate test projects for each.
 
 **Rationale:**
 - **Clear boundaries:** Each project has a single, well-defined responsibility
@@ -375,55 +339,47 @@ Organize solution into distinct projects: `PowerDown.Abstractions`, `PowerDown.C
 
 ---
 
-## ADR-013: Configuration via Command-Line Only (v1)
+## ADR-013: Configuration via Settings File and UI
 
 **Status:** Accepted
 
 **Context:**
-The application needs to be configurable. Options include command-line arguments, configuration files, and environment variables.
+The application needs to be configurable. Options include in-app settings, configuration files, and environment variables.
 
 **Decision:**
-For v1.0, use only command-line arguments for configuration. Configuration files and environment variables planned for future versions.
+Use `appsettings.json` for persisted defaults and expose key settings through the UI.
 
 **Rationale:**
-- **Simplicity:** Faster to implement and test
-- **Standard:** Matches CLI tools' typical behavior
-- **Explicit:** Users see all options via `--help`
-- **No state:** No configuration file corruption or migration issues
+- **User-friendly:** Settings are visible and adjustable without typing commands
+- **Persisted:** Defaults survive restarts
+- **Explicit:** Settings are grouped and described in the UI
 
 **Consequences:**
 
 **Positive:**
-- Simple implementation
-- No configuration file management
-- Clear user expectations
-- Easy to test
+- Simple to adjust without CLI knowledge
+- Settings persist across sessions
+- Easier onboarding for non-technical users
 
 **Negative:**
-- Must retype arguments every run
-- Can't save favorite configurations
-- Longer command lines for complex setups
-- Less convenient for power users
-
-**Future improvement:** Add `appsettings.json` support in v1.1
+- Requires validating user input from the UI
+- Requires schema updates when adding new settings
 
 ---
 
-## ADR-014: Graceful Shutdown Handling with CTRL+C
+## ADR-014: Graceful Shutdown Cancellation via UI
 
 **Status:** Accepted
 
 **Context:**
-Users may want to cancel the scheduled shutdown before it executes. Standard Windows shutdown commands don't provide easy cancellation.
+Users may want to cancel the scheduled shutdown before it executes.
 
 **Decision:**
-Handle `Console.CancelKeyPress` event to detect CTRL+C, cancel scheduled shutdown using `shutdown.exe /a`, and clean up resources.
+Expose a UI command to cancel scheduled shutdown using the platform shutdown service, and clean up resources.
 
 **Rationale:**
-- **User control:** Users can cancel shutdown during 30-second countdown
+- **User control:** Users can cancel shutdown during the countdown
 - **Graceful cleanup:** Properly disposes resources and stops polling
-- **Windows standard:** Uses standard `shutdown.exe /a` command
-- **Expected behavior:** Matches user expectations for CLI tools
 
 **Consequences:**
 
@@ -431,7 +387,7 @@ Handle `Console.CancelKeyPress` event to detect CTRL+C, cancel scheduled shutdow
 - User can cancel shutdown
 - Proper cleanup of resources
 - No orphaned shutdowns
-- Matches CLI best practices
+- Matches user expectations for desktop apps
 
 **Negative:**
 - Adds complexity to shutdown flow
@@ -448,7 +404,7 @@ Handle `Console.CancelKeyPress` event to detect CTRL+C, cancel scheduled shutdow
 The application needs comprehensive testing. Different types of tests (unit, integration, E2E) have different requirements and should be clearly separated.
 
 **Decision:**
-Create separate test projects for each source project: `PowerDown.Core.Tests`, `PowerDown.Platform.Windows.Tests`, `PowerDown.Cli.Tests`, and `PowerDown.IntegrationTests`.
+Create separate test projects for each source project: `PowerDown.Core.Tests`, `PowerDown.Platform.Windows.Tests`, `PowerDown.Platform.Linux.Tests`, `PowerDown.Platform.macOS.Tests`, and `PowerDown.UI.Tests`.
 
 **Rationale:**
 - **Clear test organization:** Tests mirror source structure
@@ -474,8 +430,6 @@ Create separate test projects for each source project: `PowerDown.Core.Tests`, `
 ## Future ADRs
 
 As the project evolves, new ADRs will be added for:
-- Configuration file support
-- GUI application architecture
 - Linux and macOS platform implementations
 - Additional launcher integrations
 - Plugin system architecture

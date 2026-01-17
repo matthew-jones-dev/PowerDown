@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 using Xunit;
 using FluentAssertions;
 using Moq;
@@ -8,6 +9,7 @@ using PowerDown.Platform.Windows.Services;
 
 namespace PowerDown.Platform.Windows.Tests.Services;
 
+[SupportedOSPlatform("windows")]
 public class WindowsShutdownServiceTests
 {
     [Fact]

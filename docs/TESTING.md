@@ -14,7 +14,7 @@ Test individual components in isolation with mocked dependencies.
 - Core logic: 90%+
 - Platform logic: 80%+
 - Detection logic: 70%+
-- CLI: 85%+
+- UI: 80%+
 
 **Examples:**
 - `ConfigurationTests` - Test configuration model
@@ -27,11 +27,11 @@ Test interactions between components with some real dependencies.
 
 **Examples:**
 - `DownloadOrchestratorTests` - Test orchestrator with mock detectors
-- `CommandLineParsingTests` - Test CLI argument parsing with DI container
+- `MainViewModelTests` - Test UI orchestration and state
 
 ### Near-E2E Tests (10% of tests)
 
-Test complete workflows with mocked external systems (Steam/Epic processes, file system, registry).
+Test complete workflows with mocked external systems (Steam processes, file system, registry).
 
 **Examples:**
 - `MonitoringWorkflowTests` - Test complete monitoring flow
@@ -51,8 +51,9 @@ dotnet test
 ```bash
 dotnet test PowerDown.Core.Tests
 dotnet test PowerDown.Platform.Windows.Tests
-dotnet test PowerDown.Cli.Tests
-dotnet test PowerDown.IntegrationTests
+dotnet test PowerDown.Platform.Linux.Tests
+dotnet test PowerDown.Platform.macOS.Tests
+dotnet test PowerDown.UI.Tests
 ```
 
 ### Run Specific Test Class
@@ -101,16 +102,12 @@ TestData/
 │   ├── content_log_complete.txt
 │   ├── libraryfolders.vdf
 │   └── appmanifest_570.acf
-└── Epic/
-    ├── LauncherInstalled.dat
-    └── manifest_sample.json
 ```
 
 ### Purpose
 
 - **Steam logs** - Sample Steam content_log.txt with various download states
 - **Steam VDF** - Sample Valve Data Format files (appmanifest, libraryfolders)
-- **Epic JSON** - Sample Epic Games manifest files
 
 ### Adding Test Data
 
@@ -174,9 +171,10 @@ public void Configuration_DefaultValues_AreCorrect()
 {
     var config = new Configuration();
     
-    config.VerificationDelaySeconds.Should().Be(60);
-    config.PollingIntervalSeconds.Should().Be(10);
-    config.RequiredNoActivityChecks.Should().Be(3);
+    config.VerificationDelaySeconds.Should().Be(120);
+    config.PollingIntervalSeconds.Should().Be(15);
+    config.RequiredNoActivityChecks.Should().Be(5);
+    config.ShutdownDelaySeconds.Should().Be(60);
 }
 ```
 
@@ -351,7 +349,7 @@ public class MockDownloadDetector : IDownloadDetector
 | Core Logic | 90%+ | TBD |
 | Platform Logic | 80%+ | TBD |
 | Detection Logic | 70%+ | TBD |
-| CLI | 85%+ | TBD |
+| UI | 80%+ | TBD |
 | Overall | 75%+ | TBD |
 
 ### Checking Coverage
@@ -396,23 +394,29 @@ Tests core business logic:
 Tests Windows platform implementations:
 
 - `Services/` - Test path detection and shutdown
-- `Detectors/` - Test Steam and Epic detectors
+- `Detectors/` - Test Steam detectors
 - `Helpers/` - Test file system and registry mocks
 
-### PowerDown.Cli.Tests
+### PowerDown.Platform.Linux.Tests
 
-Tests CLI application:
+Tests Linux platform implementations:
 
-- `ProgramTests` - Test entry point
-- `CommandLineParsingTests` - Test argument parsing
-- `DependencyInjectionTests` - Test DI container setup
+- `Services/` - Test path detection and shutdown
+- `Detectors/` - Test Steam detectors
 
-### PowerDown.IntegrationTests
+### PowerDown.Platform.macOS.Tests
 
-Tests complete workflows:
+Tests macOS platform implementations:
 
-- `EndToEnd/` - Test monitoring and shutdown workflows
-- `Scenarios/` - Test complex scenarios (resume, multiple launchers)
+- `Services/` - Test path detection and shutdown
+- `Detectors/` - Test Steam detectors
+
+### PowerDown.UI.Tests
+
+Tests UI state and view models:
+
+- `MainViewModelTests` - Monitoring flow and status updates
+- `DownloadItemViewModelTests` - Status mapping and display
 
 ## Best Practices
 

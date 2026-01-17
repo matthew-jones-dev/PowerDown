@@ -1,8 +1,9 @@
 using System;
+using PowerDown.Abstractions.Interfaces;
 
 namespace PowerDown.Core;
 
-public class ConsoleLogger
+public class ConsoleLogger : ILogger
 {
     private readonly bool _verbose;
 

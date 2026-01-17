@@ -1,0 +1,160 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:PowerDown.UI.Views"
+        xmlns:vm="using:PowerDown.UI.ViewModels"
+        xmlns:converters="using:PowerDown.UI.Converters"
+        x:Class="PowerDown.UI.MainWindow"
+        Title="PowerDown" Height="600" Width="900"
+        MinHeight="520" MinWidth="720"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource AppBackground}">
+    
+    <Window.Resources>
+        <SolidColorBrush x:Key="StatusGreen" Color="#37D4A2"/>
+        <SolidColorBrush x:Key="StatusYellow" Color="#FFB347"/>
+        <SolidColorBrush x:Key="StatusRed" Color="#F26C6C"/>
+        <SolidColorBrush x:Key="StatusBlue" Color="#4E9AF1"/>
+        <converters:CompletedStatusConverter x:Key="CompletedStatusConverter"/>
+    </Window.Resources>
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock FontSize="26" FontWeight="Bold" Text="PowerDown" FontFamily="{StaticResource DisplayFont}"/>
+                <TextBlock FontSize="13" Foreground="{StaticResource TextMuted}"
+                           Text="Automatically shutdown when game downloads complete"/>
+            </StackPanel>
+            <Button Grid.Column="1" Content="Settings" Classes="ghost" VerticalAlignment="Center"
+                    Click="OnOpenSettings"/>
+        </Grid>
+        
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Status Panel -->
+            <StackPanel Grid.Column="0" Spacing="12" Margin="0,0,15,0">
+                <Border Background="{StaticResource CardBackground}"
+                        BorderBrush="{StaticResource CardBorder}"
+                        BorderThickness="{StaticResource CardBorderThickness}"
+                        CornerRadius="{StaticResource CardRadius}" Padding="16">
+                    <StackPanel Spacing="10">
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="Status" FontFamily="{StaticResource DisplayFont}"/>
+                        <Border Background="#0F141B" CornerRadius="10" Padding="12">
+                            <StackPanel>
+                                <TextBlock Text="Current Phase" FontSize="11" Foreground="{StaticResource TextMuted}"/>
+                                <TextBlock Text="{Binding CurrentPhaseText}" FontSize="16" FontWeight="Medium"/>
+                                <TextBlock Text="{Binding PhaseDescription}" FontSize="12" Foreground="{StaticResource TextMuted}"
+                                           Margin="0,6,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="{Binding StatusIndicatorColor}" CornerRadius="10" Padding="12">
+                            <StackPanel>
+                                <TextBlock Text="{Binding StatusText}" FontSize="14" FontWeight="Medium"
+                                           TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding StatusSubtext}" FontSize="12" Opacity="0.85"
+                                           Margin="0,5,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                        <StackPanel IsVisible="{Binding ShowVerificationProgress}" Spacing="6">
+                            <TextBlock Text="Verification Progress" FontSize="12" Foreground="{StaticResource TextMuted}"/>
+                            <ProgressBar Minimum="0" Maximum="{Binding VerificationTotalChecks}"
+                                         Value="{Binding VerificationChecksCompleted}" Height="8"/>
+                            <TextBlock Text="{Binding VerificationStatusText}" FontSize="12"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#332B1E"
+                        BorderBrush="#5C4123"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource CardRadius}" Padding="14"
+                        IsVisible="{Binding ShowShutdownWarning}">
+                    <StackPanel>
+                        <TextBlock FontWeight="Bold" Text="Shutdown Imminent"/>
+                        <TextBlock Text="{Binding ShutdownCountdownText}" Margin="0,5,0,0"/>
+                        <TextBlock Text="Click Stop Shutdown to abort" FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,5,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Downloads Panel -->
+            <Border Grid.Column="1" Background="{StaticResource CardBackground}"
+                    BorderBrush="{StaticResource CardBorder}"
+                    BorderThickness="{StaticResource CardBorderThickness}"
+                    CornerRadius="{StaticResource CardRadius}" Padding="16">
+                <Grid RowDefinitions="Auto,*" ColumnDefinitions="*">
+                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="Downloads" FontFamily="{StaticResource DisplayFont}"/>
+                    <ScrollViewer Grid.Row="1">
+                        <StackPanel Spacing="8" Margin="0,12,0,0">
+                            <ItemsControl ItemsSource="{Binding ActiveDownloads}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#0F141B" CornerRadius="10" Padding="12">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding StateGlyph}"
+                                                           Foreground="{Binding StateColor}" FontSize="14"
+                                                           Margin="0,1,10,0"/>
+                                                <TextBlock Grid.Row="0" Grid.Column="1"
+                                                           Text="{Binding GameName}" FontWeight="Medium"
+                                                           TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+                                                <TextBlock Grid.Row="0" Grid.Column="2"
+                                                           Text="{Binding LauncherName}" Foreground="{StaticResource TextMuted}"
+                                                           HorizontalAlignment="Right"/>
+                                                <TextBlock Grid.Row="1" Grid.Column="1"
+                                                           Text="{Binding StatusText}" FontSize="12"
+                                                           Foreground="{StaticResource TextMuted}"/>
+                                                <Button Grid.Row="1" Grid.Column="2"
+                                                        Content="Remove"
+                                                        Classes="ghost"
+                                                        Command="{Binding DataContext.RemoveDownloadCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        IsVisible="{Binding StatusText, Converter={StaticResource CompletedStatusConverter}}"
+                                                        HorizontalAlignment="Right"
+                                                        Padding="6,2"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="No downloads yet"
+                                       IsVisible="{Binding HasAnyDownloads, Converter={x:Static BoolConverters.Not}}"
+                                       Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,20"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" 
+                    Margin="0,15,0,0">
+            <Button Command="{Binding CancelShutdownCommand}" IsVisible="{Binding ShowShutdownWarning}"
+                    Content="Stop Shutdown" Classes="ghost" Margin="0,0,10,0"/>
+            <Button Command="{Binding CancelCommand}" IsEnabled="{Binding CanCancel}" 
+                    Content="Cancel" Classes="ghost" Margin="0,0,10,0"/>
+            <Button Command="{Binding StartCommand}" IsEnabled="{Binding CanStart}" 
+                    Content="Start Monitoring" Classes="primary"/>
+        </StackPanel>
+
+        <!-- Status Bar -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,15,0,0">
+            <TextBlock Text="{Binding LastUpdateTime}" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+        </StackPanel>
+    </Grid>
+</Window>

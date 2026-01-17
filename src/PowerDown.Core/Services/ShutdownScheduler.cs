@@ -2,45 +2,64 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using PowerDown.Abstractions;
+using PowerDown.Abstractions.Interfaces;
 
 namespace PowerDown.Core.Services;
 
-/// <summary>
-/// Handles shutdown scheduling and cancellation
-/// </summary>
 public class ShutdownScheduler
 {
     private readonly IShutdownService _shutdownService;
-    private readonly ConsoleLogger _logger;
+    private readonly ILogger _logger;
     private readonly Configuration _config;
     private readonly CancellationToken _cancellationToken;
+    private readonly IStatusNotifier _statusNotifier;
     private bool _isVerificationPeriod = false;
 
     public bool IsVerificationPeriod => _isVerificationPeriod;
 
     public ShutdownScheduler(
         IShutdownService shutdownService,
-        ConsoleLogger logger,
+        ILogger logger,
         Configuration config,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IStatusNotifier? statusNotifier = null)
     {
         _shutdownService = shutdownService ?? throw new ArgumentNullException(nameof(shutdownService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _cancellationToken = cancellationToken;
+        _statusNotifier = statusNotifier ?? new StatusNotifier();
     }
 
     public async Task ScheduleShutdownAsync()
     {
         if (_config.DryRun)
         {
-            _logger.LogInfo("Dry run mode: Would shutdown now");
+            var message = "Dry run mode: Would shutdown now";
+            _logger.LogInfo(message);
+            _statusNotifier.NotifyStatus(message);
+            _statusNotifier.NotifyShutdownScheduled(new ShutdownEventArgs
+            {
+                DelaySeconds = _config.ShutdownDelaySeconds,
+                IsDryRun = true,
+                Reason = "Dry run mode"
+            });
             return;
         }
 
         var delaySeconds = _config.ShutdownDelaySeconds;
-        _logger.LogInfo($"Initiating shutdown in {delaySeconds} seconds...");
+        var message2 = $"Initiating shutdown in {delaySeconds} seconds...";
+        _logger.LogInfo(message2);
+        _statusNotifier.NotifyStatus(message2);
+        _statusNotifier.NotifyShutdownScheduled(new ShutdownEventArgs
+        {
+            DelaySeconds = delaySeconds,
+            IsDryRun = false,
+            Reason = "All downloads complete"
+        });
+        
         _logger.LogInfo("Press CTRL+C to cancel");
+        
         await Task.Delay(delaySeconds * 1000, _cancellationToken);
 
         if (!_cancellationToken.IsCancellationRequested)
@@ -64,7 +83,13 @@ public class ShutdownScheduler
             {
                 if (t.IsFaulted)
                 {
-                    _logger.LogWarning($"Failed to cancel shutdown: {t.Exception?.Message}");
+                    var error = $"Failed to cancel shutdown: {t.Exception?.Message}";
+                    _logger.LogWarning(error);
+                    _statusNotifier.NotifyStatus(error);
+                }
+                else
+                {
+                    _statusNotifier.NotifyStatus("Shutdown cancelled");
                 }
             }, TaskScheduler.Default);
         }
